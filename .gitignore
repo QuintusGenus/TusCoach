@@ -63,3 +63,4 @@ htmlcov/
 .DS_Store
 *.log
 *.tmp
+backend/*.db
