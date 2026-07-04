@@ -1,0 +1,17 @@
+# Core
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+psycopg2-binary>=2.9.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Async Tasks & Caching
+celery>=5.3.0
+redis>=5.0.0

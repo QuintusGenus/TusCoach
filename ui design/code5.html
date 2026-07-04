@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#f0f4f5",
+              "on-tertiary": "#ffffff",
+              "on-secondary-container": "#006f66",
+              "surface": "#f6fafb",
+              "outline": "#6f7979",
+              "on-surface-variant": "#3f4949",
+              "on-surface": "#181c1d",
+              "surface-container": "#eaeef0",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#004d66",
+              "on-background": "#181c1d",
+              "primary-fixed-dim": "#8dcff2",
+              "on-tertiary-fixed-variant": "#852300",
+              "surface-container-high": "#e5e9ea",
+              "secondary": "#006a62",
+              "surface-container-lowest": "#ffffff",
+              "error-container": "#ffdad6",
+              "surface-container-highest": "#dfe3e4",
+              "surface-dim": "#d6dbdc",
+              "secondary-container": "#81f3e5",
+              "background": "#f6fafb",
+              "tertiary": "#771f00",
+              "on-secondary-fixed": "#00201d",
+              "secondary-fixed-dim": "#66d9cc",
+              "surface-bright": "#f6fafb",
+              "tertiary-fixed": "#ffdbd0",
+              "primary-fixed": "#c1e8ff",
+              "tertiary-fixed-dim": "#ffb59f",
+              "surface-tint": "#176684",
+              "inverse-on-surface": "#edf1f2",
+              "on-primary-fixed": "#001e2b",
+              "on-error-container": "#93000a",
+              "primary": "#00445c",
+              "on-tertiary-fixed": "#3a0a00",
+              "primary-container": "#035d7b",
+              "on-primary": "#ffffff",
+              "tertiary-container": "#a02c00",
+              "on-secondary-fixed-variant": "#005049",
+              "surface-variant": "#dfe3e4",
+              "on-tertiary-container": "#ffbca8",
+              "on-error": "#ffffff",
+              "on-primary-container": "#92d4f7",
+              "inverse-surface": "#2c3132",
+              "on-secondary": "#ffffff",
+              "secondary-fixed": "#84f5e8",
+              "inverse-primary": "#8dcff2",
+              "outline-variant": "#bec8c9"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f6fafb;
+      }
+      h1, h2, h3 {
+        font-family: 'Manrope', sans-serif;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .chart-container {
+        position: relative;
+        height: 200px;
+        width: 100%;
+      }
+      .line-node {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        position: absolute;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-[#f6fafb] dark:bg-slate-950/70 backdrop-blur-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional portrait of a young doctor in medical scrubs looking confident with soft clinical background lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJAS650mZ2-bPyPPnAvAoAorag1cTs2CfqMEsLFDVAvJiInjvSHzL0zShrrsEbEHSaOrW7i11Nj5hb8uMXEdOimWquH-5QnX7BsqmedBF2VDmSF08UOM7FIJveppQ5CGqDDI6no-dQnVlmI63WsJ8e3CNL3KHOqySlsWnthNtINFQM6wjO0ydNEFDZWrSU73rjnvQ4T5FjobCsneR1P0nMiZUPc3oaAKy8G_-0JojrMZ06inoRrVf5JD6x3XSs1VhW2QUaO5HoBQ1Z"/>
+</div>
+<h1 class="text-cyan-900 dark:text-cyan-100 font-manrope font-extrabold tracking-tighter text-xl">The Focused Scholar</h1>
+</div>
+<div class="p-2 rounded-full hover:bg-cyan-50/50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-cyan-900">notifications</span>
+</div>
+</header>
+<main class="px-6 pt-6 space-y-8 max-w-5xl mx-auto">
+<!-- Header Section -->
+<section class="space-y-1">
+<h2 class="text-3xl font-extrabold tracking-tight text-primary">Performans Analizi</h2>
+<p class="text-on-surface-variant font-medium">Son 30 günlük gelişim verileriniz hazırlandı.</p>
+</section>
+<!-- Main Analytics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Performance Trend Chart (7 columns) -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-full p-8 space-y-6 relative overflow-hidden group">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="text-lg font-bold text-primary">Net Gelişim Trendi</h3>
+<p class="text-xs text-on-surface-variant">Son 5 Deneme Sınavı</p>
+</div>
+<div class="text-right">
+<span class="text-2xl font-black text-secondary">+12.5</span>
+<span class="text-xs block text-secondary-container bg-secondary px-2 py-0.5 rounded-full">Artış</span>
+</div>
+</div>
+<!-- Visual Line Chart Representation -->
+<div class="h-48 flex items-end justify-between gap-2 pt-8 relative border-b border-surface-container-highest">
+<div class="absolute inset-0 flex flex-col justify-between opacity-20 pointer-events-none">
+<div class="border-t border-outline-variant w-full"></div>
+<div class="border-t border-outline-variant w-full"></div>
+<div class="border-t border-outline-variant w-full"></div>
+</div>
+<!-- Chart Bars/Points -->
+<div class="flex-1 flex flex-col items-center group/bar">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[40%] group-hover/bar:bg-primary-fixed transition-all duration-500"></div>
+<span class="text-[10px] mt-2 font-semibold text-outline">D-1</span>
+</div>
+<div class="flex-1 flex flex-col items-center group/bar">
+<div class="w-full bg-surface-container-high rounded-t-lg h-[55%] group-hover/bar:bg-primary-fixed transition-all duration-500"></div>
+<span class="text-[10px] mt-2 font-semibold text-outline">D-2</span>
+</div>
+<div class="flex-1 flex flex-col items-center group/bar">
+<div class="w-full bg-primary-container rounded-t-lg h-[45%] group-hover/bar:bg-primary transition-all duration-500"></div>
+<span class="text-[10px] mt-2 font-semibold text-outline">D-3</span>
+</div>
+<div class="flex-1 flex flex-col items-center group/bar">
+<div class="w-full bg-primary-container rounded-t-lg h-[70%] group-hover/bar:bg-primary transition-all duration-500"></div>
+<span class="text-[10px] mt-2 font-semibold text-outline">D-4</span>
+</div>
+<div class="flex-1 flex flex-col items-center group/bar">
+<div class="w-full bg-secondary rounded-t-lg h-[85%] transition-all duration-500"></div>
+<span class="text-[10px] mt-2 font-semibold text-primary font-bold">SON</span>
+</div>
+</div>
+</div>
+<!-- Subject Distribution (5 columns) -->
+<div class="md:col-span-4 bg-surface-container-low rounded-full p-8 flex flex-col items-center justify-center space-y-6">
+<h3 class="text-center font-bold text-primary">Hata Dağılımı</h3>
+<!-- Simple Donut Representation -->
+<div class="relative w-40 h-40 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-width="16"></circle>
+<circle class="text-tertiary" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-dasharray="440" stroke-dashoffset="110" stroke-width="16"></circle>
+<circle class="text-secondary" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-dasharray="440" stroke-dashoffset="300" stroke-width="16"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="text-2xl font-black text-primary">74</span>
+<span class="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">HATA</span>
+</div>
+</div>
+<div class="w-full space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-sm font-medium">Mikrobiyoloji</span>
+</div>
+<span class="text-sm font-bold">%42</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-sm font-medium">Farmakoloji</span>
+</div>
+<span class="text-sm font-bold">%31</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-surface-container-highest"></span>
+<span class="text-sm font-medium">Diğer</span>
+</div>
+<span class="text-sm font-bold">%27</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Insights Section -->
+<section class="space-y-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="text-xl font-bold text-primary tracking-tight">Gelişim Tavsiyeleri</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Insight Card 1 -->
+<div class="glass-card p-6 rounded-full flex gap-5 items-start relative group hover:scale-[1.02] transition-transform duration-300">
+<div class="absolute left-0 top-6 bottom-6 w-1 bg-tertiary rounded-r-full"></div>
+<div class="w-12 h-12 rounded-xl bg-tertiary-fixed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-tertiary">coronavirus</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-bold text-on-surface">Mikrobiyoloji Odağı</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">Son 3 denemedir Gram (+) bakterilerde %40 hata payınız var. Bu hafta sonu 2 saatlik bir tekrar seansı eklemelisiniz.</p>
+</div>
+</div>
+<!-- Insight Card 2 -->
+<div class="glass-card p-6 rounded-full flex gap-5 items-start relative group hover:scale-[1.02] transition-transform duration-300">
+<div class="absolute left-0 top-6 bottom-6 w-1 bg-secondary rounded-r-full"></div>
+<div class="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary">history_edu</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-bold text-on-surface">Vaka Çözüm Hızı</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">Klinik bilimlerde soru başına harcadığınız süre 62 saniyeye düştü. İdeal tempoya %90 yaklaştınız!</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Featured Resource Section -->
+<section class="bg-primary-container rounded-full p-8 text-on-primary-container flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary rounded-full blur-3xl opacity-20 -mr-32 -mt-32"></div>
+<div class="flex-1 space-y-4 relative z-10">
+<span class="text-[10px] font-black uppercase tracking-[0.2em] bg-on-primary-container text-primary-container px-3 py-1 rounded-full">KİŞİSELLEŞTİRİLMİŞ</span>
+<h3 class="text-2xl font-bold leading-tight">Zayıf Nokta Kampı: Farmakoloji Reseptörler</h3>
+<p class="text-on-primary-container/80 text-sm max-w-md">Analizlerimize göre bu hafta bu konuya çalışmak toplam netinizi +4 artırabilir.</p>
+<button class="bg-on-primary-container text-primary-container font-bold py-3 px-8 rounded-xl flex items-center gap-2 hover:opacity-90 transition-all active:scale-95">
+                    Hemen Başla
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="w-full md:w-64 h-48 rounded-full overflow-hidden shadow-2xl relative z-10">
+<img class="w-full h-full object-cover" data-alt="Modern medical laboratory equipment with teal and blue lighting, clean aesthetic, high-tech pharmaceutical research setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZLDq6xKDSHxUzYAy0Q6_s-DiB3GnxvC0Qv-RKAXAOqUXTdaMefazYrC0-d8VfmYgqKvwskZXnTsxZebt6q6Z6MOmh45_hShtPxiS28U9LoR-7zR1QXXqKeXlksghaqmKl_NZWt7GE8KeAx8sloZNLD0K9C5RhpDZ45IJTiGpCVFqyQ34ej--Oaso8cVhQJUVEiDFo-qYMyYqjzfAV0r8Ph4XmBSvGPwCrDC4bDv2w3u6yWM4LKfGRd9MyAMiFKWwNPDXX2z8mCNCy"/>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl shadow-2xl dark:shadow-none rounded-t-[2rem]">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Dashboard</span>
+</a>
+<!-- Program -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_today">calendar_today</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Program</span>
+</a>
+<!-- Analiz (Active) -->
+<a class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200 rounded-2xl px-5 py-2 transition-all duration-300 scale-110" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="insights" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Analiz</span>
+</a>
+<!-- AI Chat -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="smart_toy">smart_toy</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">AI Chat</span>
+</a>
+</nav>
+</body></html>

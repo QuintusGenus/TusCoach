@@ -1,0 +1,79 @@
+version: "3.8"
+
+x-backend-common: &backend-common
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  env_file:
+    - ./backend/.env
+  environment:
+    # Override DATABASE_URL & REDIS_URL to point at container hostnames.
+    # Credentials are still read from .env; only host/port change here.
+    DATABASE_URL: postgresql://tuscoach:tuscoach123@db:5432/tuscoach
+    REDIS_URL: redis://redis:6379/0
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  # ── Infrastructure ──────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: tuscoach-db
+    environment:
+      POSTGRES_USER: tuscoach
+      POSTGRES_PASSWORD: tuscoach123
+      POSTGRES_DB: tuscoach
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tuscoach"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tuscoach-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Application ─────────────────────────────────
+  api:
+    <<: *backend-common
+    container_name: tuscoach-api
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      # Bind-mount for live reload during development
+      - ./backend:/app
+
+  celery_worker:
+    <<: *backend-common
+    container_name: tuscoach-celery-worker
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - ./backend:/app
+
+  celery_beat:
+    <<: *backend-common
+    container_name: tuscoach-celery-beat
+    command: celery -A app.core.celery_app beat --loglevel=info
+    volumes:
+      - ./backend:/app
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Focused Scholar - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#f0f4f5",
+              "on-tertiary": "#ffffff",
+              "on-secondary-container": "#006f66",
+              "surface": "#f6fafb",
+              "outline": "#6f7979",
+              "on-surface-variant": "#3f4949",
+              "on-surface": "#181c1d",
+              "surface-container": "#eaeef0",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#004d66",
+              "on-background": "#181c1d",
+              "primary-fixed-dim": "#8dcff2",
+              "on-tertiary-fixed-variant": "#852300",
+              "surface-container-high": "#e5e9ea",
+              "secondary": "#006a62",
+              "surface-container-lowest": "#ffffff",
+              "error-container": "#ffdad6",
+              "surface-container-highest": "#dfe3e4",
+              "surface-dim": "#d6dbdc",
+              "secondary-container": "#81f3e5",
+              "background": "#f6fafb",
+              "tertiary": "#771f00",
+              "on-secondary-fixed": "#00201d",
+              "secondary-fixed-dim": "#66d9cc",
+              "surface-bright": "#f6fafb",
+              "tertiary-fixed": "#ffdbd0",
+              "primary-fixed": "#c1e8ff",
+              "tertiary-fixed-dim": "#ffb59f",
+              "surface-tint": "#176684",
+              "inverse-on-surface": "#edf1f2",
+              "on-primary-fixed": "#001e2b",
+              "on-error-container": "#93000a",
+              "primary": "#00445c",
+              "on-tertiary-fixed": "#3a0a00",
+              "primary-container": "#035d7b",
+              "on-primary": "#ffffff",
+              "tertiary-container": "#a02c00",
+              "on-secondary-fixed-variant": "#005049",
+              "surface-variant": "#dfe3e4",
+              "on-tertiary-container": "#ffbca8",
+              "on-error": "#ffffff",
+              "on-primary-container": "#92d4f7",
+              "inverse-surface": "#2c3132",
+              "on-secondary": "#ffffff",
+              "secondary-fixed": "#84f5e8",
+              "inverse-primary": "#8dcff2",
+              "outline-variant": "#bec8c9"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased min-h-screen pb-28">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-[#f6fafb] dark:bg-slate-950/70 backdrop-blur-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden">
+<img alt="Doctor profile" class="w-full h-full object-cover" data-alt="professional portrait of a young doctor in white coat with a friendly expression, soft hospital lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnyO1VhKUHrl5gAC0994VdsXl0B7_CNA6wDMDtuNvGQatxsn6tHRxrylV9F75dLoxT4RX3hcygsAr1mXEox5BYLo7gMG7-DLEFyXtabc02A3VYYMVN_-j08_BzbtfeKRKCNkJmSDpepQInMoZabUg1SvwaE0og3iGdUjN729xAvrA33LLMBBhMxfhA0opc3F1w0_ntKWIHzBG-LlpgWK-FCtRZkw5VQ6dLn98hFmKRRyyl4uv_ZYXW5FnDM3XRlvRdh1_BOG36jnfV"/>
+</div>
+<h1 class="text-cyan-900 dark:text-cyan-100 font-manrope font-extrabold tracking-tighter text-xl">The Focused Scholar</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-cyan-50/50 transition-colors">
+<span class="material-symbols-outlined text-cyan-900">notifications</span>
+</button>
+</div>
+</header>
+<main class="px-6 max-w-5xl mx-auto space-y-8 mt-4">
+<!-- Welcome Section -->
+<section class="space-y-2">
+<p class="font-label text-on-surface-variant text-sm font-medium">Günaydın, Dr. Melis</p>
+<h2 class="font-headline text-3xl font-bold text-primary tracking-tight">Bugün %12 daha odaklısın.</h2>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Weekly Progress Card (Hero) -->
+<div class="md:col-span-8 bg-surface-container-lowest p-8 rounded-full shadow-[0_20px_40px_rgba(24,28,29,0.04)] flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+<div class="z-10 space-y-4">
+<span class="inline-block px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-xs font-semibold uppercase tracking-wider">Haftalık Hedef</span>
+<div class="space-y-1">
+<h3 class="font-headline text-4xl font-extrabold text-primary">72%</h3>
+<p class="text-on-surface-variant text-sm max-w-[200px]">Bu hafta 42 saatlik hedefin 30 saatini tamamladın.</p>
+</div>
+</div>
+<!-- Progress Ring -->
+<div class="relative w-48 h-48 flex items-center justify-center mt-6 md:mt-0">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-highest" cx="96" cy="96" fill="transparent" r="80" stroke="currentColor" stroke-width="12"></circle>
+<circle cx="96" cy="96" fill="transparent" r="80" stroke="url(#gradient)" stroke-dasharray="502.4" stroke-dashoffset="140.7" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#006a62"></stop>
+<stop offset="100%" style="stop-color:#66d9cc"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="material-symbols-outlined text-secondary text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+</div>
+</div>
+<!-- Motivation Card -->
+<div class="md:col-span-4 bg-primary-container p-8 rounded-full flex flex-col justify-center text-on-primary-container relative">
+<span class="material-symbols-outlined absolute top-6 right-8 opacity-20 text-4xl">format_quote</span>
+<p class="font-headline text-xl leading-snug font-semibold italic">"Büyük işler, küçük başlangıçların disiplinli tekrarıdır."</p>
+<p class="mt-4 text-xs font-medium opacity-80">— TUS Coach AI</p>
+</div>
+<!-- Upcoming Class Card -->
+<div class="md:col-span-5 bg-surface-container-low p-6 rounded-full border-l-8 border-secondary flex items-center gap-6">
+<div class="w-14 h-14 bg-secondary-container rounded-2xl flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-3xl">medical_services</span>
+</div>
+<div class="flex-1">
+<h4 class="font-headline font-bold text-primary">Dahiliye - Gastro</h4>
+<p class="text-sm text-on-surface-variant">Bugün • 14:00</p>
+</div>
+<button class="bg-surface-container-lowest w-10 h-10 rounded-full flex items-center justify-center shadow-sm hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-primary text-xl">play_arrow</span>
+</button>
+</div>
+<!-- Exam Performance Card -->
+<div class="md:col-span-7 bg-surface-container-lowest p-6 rounded-full shadow-[0_20px_40px_rgba(24,28,29,0.04)] flex flex-col md:flex-row md:items-center gap-6">
+<div class="flex-1 space-y-4">
+<div class="flex items-center justify-between">
+<h4 class="font-headline font-bold text-primary">Son Deneme Özeti</h4>
+<span class="text-tertiary font-bold text-lg">145 / 240 Net</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 60.4%"></div>
+</div>
+<div class="flex gap-4 items-center">
+<div class="flex items-center gap-1.5 px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed rounded-full text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">warning</span>
+                            Anatomi: Kritik Seviye
+                        </div>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full text-xs font-semibold">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                            Fizyoloji: +8 Net
+                        </div>
+</div>
+</div>
+<div class="hidden md:block w-px h-12 bg-outline-variant opacity-20"></div>
+<button class="text-primary font-bold text-sm flex items-center gap-2 hover:translate-x-1 transition-transform">
+                    Analize Git
+                    <span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<!-- Subject Cards - Mini Grid -->
+<div class="md:col-span-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="bg-surface-container-lowest p-4 rounded-full flex flex-col items-center gap-3 group hover:bg-primary-container transition-colors duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center group-hover:bg-primary">
+<span class="material-symbols-outlined text-primary group-hover:text-on-primary">biotech</span>
+</div>
+<span class="font-label font-bold text-primary group-hover:text-on-primary-container">Biyokimya</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-full flex flex-col items-center gap-3 group hover:bg-primary-container transition-colors duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center group-hover:bg-primary">
+<span class="material-symbols-outlined text-primary group-hover:text-on-primary">microbiology</span>
+</div>
+<span class="font-label font-bold text-primary group-hover:text-on-primary-container">Mikrobiyoloji</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-full flex flex-col items-center gap-3 group hover:bg-primary-container transition-colors duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center group-hover:bg-primary">
+<span class="material-symbols-outlined text-primary group-hover:text-on-primary">psychiatry</span>
+</div>
+<span class="font-label font-bold text-primary group-hover:text-on-primary-container">Psikiyatri</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-full flex flex-col items-center gap-3 group hover:bg-primary-container transition-colors duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center group-hover:bg-primary">
+<span class="material-symbols-outlined text-primary group-hover:text-on-primary">child_care</span>
+</div>
+<span class="font-label font-bold text-primary group-hover:text-on-primary-container">Pediatri</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-t-[2rem] shadow-2xl dark:shadow-none">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200 rounded-2xl px-5 py-2 transition-all duration-300 scale-110" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Dashboard</span>
+</a>
+<!-- Program -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Program</span>
+</a>
+<!-- Analiz -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Analiz</span>
+</a>
+<!-- AI Chat -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">AI Chat</span>
+</a>
+</nav>
+<!-- Contextual FAB (Only on Dashboard) -->
+<button class="fixed bottom-28 right-6 w-14 h-14 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-90 z-40">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</body></html>

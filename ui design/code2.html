@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Focused Scholar - Program</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#f0f4f5",
+              "on-tertiary": "#ffffff",
+              "on-secondary-container": "#006f66",
+              "surface": "#f6fafb",
+              "outline": "#6f7979",
+              "on-surface-variant": "#3f4949",
+              "on-surface": "#181c1d",
+              "surface-container": "#eaeef0",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#004d66",
+              "on-background": "#181c1d",
+              "primary-fixed-dim": "#8dcff2",
+              "on-tertiary-fixed-variant": "#852300",
+              "surface-container-high": "#e5e9ea",
+              "secondary": "#006a62",
+              "surface-container-lowest": "#ffffff",
+              "error-container": "#ffdad6",
+              "surface-container-highest": "#dfe3e4",
+              "surface-dim": "#d6dbdc",
+              "secondary-container": "#81f3e5",
+              "background": "#f6fafb",
+              "tertiary": "#771f00",
+              "on-secondary-fixed": "#00201d",
+              "secondary-fixed-dim": "#66d9cc",
+              "surface-bright": "#f6fafb",
+              "tertiary-fixed": "#ffdbd0",
+              "primary-fixed": "#c1e8ff",
+              "tertiary-fixed-dim": "#ffb59f",
+              "surface-tint": "#176684",
+              "inverse-on-surface": "#edf1f2",
+              "on-primary-fixed": "#001e2b",
+              "on-error-container": "#93000a",
+              "primary": "#00445c",
+              "on-tertiary-fixed": "#3a0a00",
+              "primary-container": "#035d7b",
+              "on-primary": "#ffffff",
+              "tertiary-container": "#a02c00",
+              "on-secondary-fixed-variant": "#005049",
+              "surface-variant": "#dfe3e4",
+              "on-tertiary-container": "#ffbca8",
+              "on-error": "#ffffff",
+              "on-primary-container": "#92d4f7",
+              "inverse-surface": "#2c3132",
+              "on-secondary": "#ffffff",
+              "secondary-fixed": "#84f5e8",
+              "inverse-primary": "#8dcff2",
+              "outline-variant": "#bec8c9"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        background-color: #f6fafb;
+        color: #181c1d;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-[#f6fafb] dark:bg-slate-950/70 backdrop-blur-xl">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container overflow-hidden">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Professional portrait of a young medical student in a clinical setting, soft natural lighting, blurred medical background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWRfzvrYC9G5jTXQoubfm5uynFKffh9O8b0d31xX-fX775St5CJKXDfZb2a_Qd8EVJUm_IOuv4OKnpbkV4LQwNhb6q8ofKViUViQciFeIoiRmBqmI6EFJHDbYl2jOkZ6XF63OzCzDhbv5KMUv5s3V5b9T5MXdE2xLFBK7rVdAQ5fsAwV5EzuczdA7QzGgtRPEWZTN-HtNC90O_iA3KBUjDdIevnz50uc4G4GFR9dpJXifVrVu_YIbiUvmf6p_Gb1HNeVvx5yc0O-lr"/>
+</div>
+<h1 class="text-cyan-900 dark:text-cyan-100 font-manrope font-extrabold tracking-tighter text-xl">The Focused Scholar</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-cyan-50/50 dark:hover:bg-cyan-900/20 transition-colors text-cyan-900 dark:text-cyan-400 active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-5xl mx-auto px-6 pt-4 pb-32">
+<!-- Hero Section / Context -->
+<section class="mb-10">
+<h2 class="font-headline font-bold text-3xl text-on-surface tracking-tight mb-2">Haftalık Program</h2>
+<p class="font-body text-on-surface-variant text-lg">TUS Hazırlık: 42. Hafta • Temel Bilimler Odaklı</p>
+</section>
+<!-- Bento Grid Weekly Overview -->
+<div class="grid grid-cols-1 md:grid-cols-7 gap-4 mb-10">
+<!-- Day Selector (Mobile Scrollable / Desktop Grid) -->
+<div class="md:col-span-7 flex md:grid md:grid-cols-7 gap-3 overflow-x-auto pb-4 md:pb-0 no-scrollbar">
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-lowest rounded-2xl shadow-sm border-l-4 border-secondary transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Paz</span>
+<span class="text-xl font-bold font-headline mt-1">14</span>
+</button>
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-low rounded-2xl hover:bg-surface-container-high transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Sal</span>
+<span class="text-xl font-bold font-headline mt-1">15</span>
+</button>
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-low rounded-2xl hover:bg-surface-container-high transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Çar</span>
+<span class="text-xl font-bold font-headline mt-1">16</span>
+</button>
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-low rounded-2xl hover:bg-surface-container-high transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Per</span>
+<span class="text-xl font-bold font-headline mt-1">17</span>
+</button>
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-low rounded-2xl hover:bg-surface-container-high transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Cum</span>
+<span class="text-xl font-bold font-headline mt-1">18</span>
+</button>
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-low rounded-2xl hover:bg-surface-container-high transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Cmt</span>
+<span class="text-xl font-bold font-headline mt-1">19</span>
+</button>
+<button class="min-w-[80px] flex flex-col items-center p-4 bg-surface-container-low rounded-2xl hover:bg-surface-container-high transition-all">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Paz</span>
+<span class="text-xl font-bold font-headline mt-1">20</span>
+</button>
+</div>
+</div>
+<!-- Content Layout: Main Tasks & AI Insight Side-by-Side on Desktop -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+<!-- Daily List (2/3) -->
+<div class="lg:col-span-2 space-y-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline font-bold text-xl text-primary flex items-center gap-2">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+                        Pazartesi Görevleri
+                    </h3>
+<span class="text-sm font-semibold text-secondary bg-secondary-container px-3 py-1 rounded-full">3/5 Tamamlandı</span>
+</div>
+<!-- Task Card 1 (Completed) -->
+<div class="group relative flex items-start gap-6 p-6 bg-surface-container-lowest rounded-full transition-all hover:scale-[1.01]">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-secondary rounded-r-full"></div>
+<div class="flex-shrink-0 mt-1">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-lg" data-icon="check" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-headline font-bold text-on-surface line-through opacity-50">Anatomi: Üst Ekstremite Kasları</h4>
+<p class="text-sm text-on-surface-variant mt-1 opacity-60">Fasikül 1 • Sayfa 45-80</p>
+</div>
+<span class="text-xs font-medium text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">08:00 - 10:30</span>
+</div>
+</div>
+</div>
+<!-- Task Card 2 (Active) -->
+<div class="group relative flex items-start gap-6 p-6 bg-surface-container-lowest rounded-full shadow-sm ring-1 ring-primary/5 transition-all hover:scale-[1.01]">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-primary rounded-r-full"></div>
+<div class="flex-shrink-0 mt-1">
+<button class="w-8 h-8 rounded-full border-2 border-outline-variant hover:border-primary flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-sm text-transparent" data-icon="circle">circle</span>
+</button>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-headline font-bold text-on-surface">Fizyoloji: Membran Potansiyeli</h4>
+<p class="text-sm text-on-surface-variant mt-1">Video Ders 04 • Guyton Özet</p>
+</div>
+<span class="text-xs font-bold text-primary bg-primary-fixed px-2 py-1 rounded">ŞU AN</span>
+</div>
+<div class="mt-4 w-full bg-surface-container-highest h-1.5 rounded-full overflow-hidden">
+<div class="h-full w-[65%] bg-gradient-to-r from-secondary to-secondary-fixed-dim rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Task Card 3 (Pending) -->
+<div class="group relative flex items-start gap-6 p-6 bg-surface-container-lowest rounded-full transition-all hover:scale-[1.01]">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-surface-container-highest rounded-r-full"></div>
+<div class="flex-shrink-0 mt-1">
+<button class="w-8 h-8 rounded-full border-2 border-outline-variant hover:border-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-transparent" data-icon="circle">circle</span>
+</button>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-headline font-bold text-on-surface">Biyokimya: Aminoasit Metabolizması</h4>
+<p class="text-sm text-on-surface-variant mt-1">Soru Bankası • Test 1-4</p>
+</div>
+<span class="text-xs font-medium text-on-surface-variant bg-surface-container-low px-2 py-1 rounded">14:00 - 16:30</span>
+</div>
+</div>
+</div>
+<!-- Task Card 4 (Urgent/Delayed) -->
+<div class="group relative flex items-start gap-6 p-6 bg-surface-container-lowest rounded-full transition-all hover:scale-[1.01]">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-12 bg-tertiary rounded-r-full"></div>
+<div class="flex-shrink-0 mt-1">
+<button class="w-8 h-8 rounded-full border-2 border-tertiary/30 hover:border-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-transparent" data-icon="circle">circle</span>
+</button>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-headline font-bold text-on-surface">Patoloji: Hücre Zedelenmesi</h4>
+<p class="text-sm text-tertiary font-medium mt-1">Eksik Konu Tekrarı</p>
+</div>
+<span class="text-xs font-bold text-tertiary bg-tertiary-fixed px-2 py-1 rounded">GECİKTİ</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Context (1/3) -->
+<div class="space-y-6">
+<!-- Progress Card -->
+<div class="bg-surface-container-low p-6 rounded-[2rem] relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="font-headline font-bold text-on-surface-variant mb-4">Günün Verimliliği</h4>
+<div class="flex items-end gap-2 mb-2">
+<span class="text-4xl font-extrabold font-headline text-primary">74%</span>
+<span class="text-sm font-semibold text-secondary mb-1">↑ 12% geçen haftadan</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">Harika gidiyorsun! Anatomi hedefini beklediğinden 15 dakika erken bitirdin.</p>
+</div>
+<div class="absolute -right-10 -bottom-10 opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+<!-- AI Coach Bubble (The Clinical Sanctuary Style) -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_20px_40px_rgba(24,28,29,0.04)] border border-outline-variant/20">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-base" data-icon="smart_toy">smart_toy</span>
+</div>
+<span class="font-headline font-bold text-sm text-primary tracking-wide">AI COACH ÖNERİSİ</span>
+</div>
+<p class="font-body text-sm text-on-surface leading-relaxed">
+                        "Verilerine göre bugün Biyokimya yerine Patoloji tekrarına odaklanman netlerini +2 artırabilir. Biyokimya konusunu Çarşamba sabahına kaydırmamı ister misin?"
+                    </p>
+<button class="mt-4 w-full py-3 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl text-xs tracking-widest uppercase transition-all active:scale-95">
+                        ÖNERİYİ UYGULA
+                    </button>
+</div>
+<!-- Subject Distribution Chart Concept -->
+<div class="bg-surface-container-highest/30 p-6 rounded-[2rem] border border-outline-variant/10">
+<h4 class="font-headline font-bold text-sm text-on-surface-variant mb-6 uppercase tracking-widest">Haftalık Dağılım</h4>
+<div class="space-y-4">
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-bold">
+<span>Klinik Bilimler</span>
+<span class="text-primary">45%</span>
+</div>
+<div class="h-2 bg-surface-container rounded-full">
+<div class="h-full w-[45%] bg-primary rounded-full"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-xs font-bold">
+<span>Temel Bilimler</span>
+<span class="text-secondary">55%</span>
+</div>
+<div class="h-2 bg-surface-container rounded-full">
+<div class="h-full w-[55%] bg-secondary rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-t-[2rem] shadow-[0_-4px_20px_rgba(0,0,0,0.02)] shadow-2xl dark:shadow-none">
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard">dashboard</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200 rounded-2xl px-5 py-2 transition-all duration-300 scale-110" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_today" style="font-variation-settings: 'FILL' 1;">calendar_today</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Program</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="insights">insights</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Analiz</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="smart_toy">smart_toy</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">AI Chat</span>
+</a>
+</nav>
+<!-- Floating Action Button (FAB) - Contextual for Calendar -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+</body></html>

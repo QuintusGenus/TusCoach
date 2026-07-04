@@ -1,0 +1,61 @@
+version: "3.8"
+
+# Production overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Differences from the dev compose:
+# - No bind-mount volumes (uses baked-in image)
+# - No --reload on uvicorn
+# - Workers tuned for production concurrency
+# - Ports restricted: only api:8000 exposed (Nginx sits in front)
+# - Restart policies on all services
+
+x-backend-common: &backend-common
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  env_file:
+    - ./backend/.env
+  environment:
+    DATABASE_URL: postgresql://${POSTGRES_USER:-tuscoach}:${POSTGRES_PASSWORD:-tuscoach123}@db:5432/${POSTGRES_DB:-tuscoach}
+    REDIS_URL: redis://redis:6379/0
+    ENV: prod
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    restart: unless-stopped
+    ports: []                       # Do NOT expose Postgres to the host in prod
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tuscoach}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-tuscoach}
+
+  redis:
+    restart: unless-stopped
+    ports: []                       # Do NOT expose Redis to the host in prod
+
+  api:
+    <<: *backend-common
+    container_name: tuscoach-api
+    ports:
+      - "127.0.0.1:8000:8000"      # Bind to loopback only — Nginx proxies
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+    volumes: []                     # No bind-mount in prod
+
+  celery_worker:
+    <<: *backend-common
+    container_name: tuscoach-celery-worker
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=4
+    volumes: []
+
+  celery_beat:
+    <<: *backend-common
+    container_name: tuscoach-celery-beat
+    command: celery -A app.core.celery_app beat --loglevel=info
+    volumes: []

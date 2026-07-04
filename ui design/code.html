@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html class="light" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Focused Scholar - AI Koç</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-low": "#f0f4f5",
+              "on-tertiary": "#ffffff",
+              "on-secondary-container": "#006f66",
+              "surface": "#f6fafb",
+              "outline": "#6f7979",
+              "on-surface-variant": "#3f4949",
+              "on-surface": "#181c1d",
+              "surface-container": "#eaeef0",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#004d66",
+              "on-background": "#181c1d",
+              "primary-fixed-dim": "#8dcff2",
+              "on-tertiary-fixed-variant": "#852300",
+              "surface-container-high": "#e5e9ea",
+              "secondary": "#006a62",
+              "surface-container-lowest": "#ffffff",
+              "error-container": "#ffdad6",
+              "surface-container-highest": "#dfe3e4",
+              "surface-dim": "#d6dbdc",
+              "secondary-container": "#81f3e5",
+              "background": "#f6fafb",
+              "tertiary": "#771f00",
+              "on-secondary-fixed": "#00201d",
+              "secondary-fixed-dim": "#66d9cc",
+              "surface-bright": "#f6fafb",
+              "tertiary-fixed": "#ffdbd0",
+              "primary-fixed": "#c1e8ff",
+              "tertiary-fixed-dim": "#ffb59f",
+              "surface-tint": "#176684",
+              "inverse-on-surface": "#edf1f2",
+              "on-primary-fixed": "#001e2b",
+              "on-error-container": "#93000a",
+              "primary": "#00445c",
+              "on-tertiary-fixed": "#3a0a00",
+              "primary-container": "#035d7b",
+              "on-primary": "#ffffff",
+              "tertiary-container": "#a02c00",
+              "on-secondary-fixed-variant": "#005049",
+              "surface-variant": "#dfe3e4",
+              "on-tertiary-container": "#ffbca8",
+              "on-error": "#ffffff",
+              "on-primary-container": "#92d4f7",
+              "inverse-surface": "#2c3132",
+              "on-secondary": "#ffffff",
+              "secondary-fixed": "#84f5e8",
+              "inverse-primary": "#8dcff2",
+              "outline-variant": "#bec8c9"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(240, 244, 245, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .ai-bubble {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(190, 200, 201, 0.2);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dfe3e4;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-6 py-4 w-full sticky top-0 z-50 bg-[#f6fafb] dark:bg-slate-950/70 backdrop-blur-xl no-border bg-surface-container-low">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-container flex items-center justify-center">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a young medical doctor in a white coat with a friendly expression and soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA_a6dnE0t5Rm6OOidgaGPAeHNMIIz85Qece_vcgqUEhm5YJPoO-U-7J2ODUP2Q9sAzUhuSugG-t50etSbihjTvRaJwWITv1sxvv14Yo7jMgveVpmbbLN4ez4yMkX9POYeJqWxnXUX_a077SxhuWKm4k4sWQP2ndw-Ib5WWAPLKQAQSodsneOldIs3EpkgyIHwoquoT5VmfkAOe8ToGmwOOZMWd45vVIdFb8mxRy2QCzlgregc9Bxgk1aghbMadb31idAGoWHihh4n"/>
+</div>
+<h1 class="font-manrope font-extrabold tracking-tighter text-cyan-900 dark:text-cyan-100 text-xl">The Focused Scholar</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-cyan-50/50 transition-colors text-cyan-900">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Chat Canvas -->
+<main class="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 pt-6 pb-32">
+<!-- AI Coach Intro -->
+<div class="flex flex-col items-center mb-10 space-y-4">
+<div class="relative">
+<div class="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-white text-4xl" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="absolute -bottom-1 -right-1 w-6 h-6 bg-secondary rounded-full border-4 border-surface flex items-center justify-center">
+<div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+</div>
+</div>
+<div class="text-center">
+<h2 class="font-headline text-2xl font-bold text-primary">Dr. Scholar AI</h2>
+<p class="text-on-surface-variant text-sm">TUS Başarı Stratejistiniz</p>
+</div>
+</div>
+<!-- Chat History -->
+<div class="flex-1 space-y-8 mb-8 overflow-y-auto pr-2">
+<!-- AI Message -->
+<div class="flex gap-4 items-start max-w-[85%]">
+<div class="w-8 h-8 rounded-lg bg-secondary flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">smart_toy</span>
+</div>
+<div class="ai-bubble p-5 rounded-2xl rounded-tl-none shadow-sm">
+<p class="text-on-surface leading-relaxed text-[15px]">
+                        Merhaba Ahmet, bugün Pediatri netlerini %15 artırman için harika bir plan hazırladım. Hangi konudan başlamak istersin?
+                    </p>
+<div class="mt-4 flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-secondary/10 text-secondary text-xs font-semibold rounded-full uppercase tracking-wider">Hedef: Biyokimya</span>
+<span class="px-3 py-1 bg-tertiary/10 text-tertiary text-xs font-semibold rounded-full uppercase tracking-wider">Kritik Tekrar</span>
+</div>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex justify-end w-full">
+<div class="max-w-[75%] bg-primary-container text-on-primary-container p-5 rounded-2xl rounded-tr-none shadow-sm">
+<p class="leading-relaxed text-[15px]">
+                        Bugün biraz yorgun hissediyorum, daha çok görsel ağırlıklı bir çalışma yapabilir miyiz?
+                    </p>
+</div>
+</div>
+<!-- AI Message (Analysis/Insight) -->
+<div class="flex gap-4 items-start max-w-[90%]">
+<div class="w-8 h-8 rounded-lg bg-secondary flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">smart_toy</span>
+</div>
+<div class="ai-bubble p-6 rounded-2xl rounded-tl-none shadow-sm space-y-4">
+<p class="text-on-surface leading-relaxed text-[15px]">
+                        Anlıyorum. Bilişsel yükü azaltmak için Anatomi atlası üzerinden ilerlemek en iyisi olacaktır. Özellikle **Alt Ekstremite Kasları** için hazırladığım interaktif şemaları inceleyebiliriz.
+                    </p>
+<div class="grid grid-cols-2 gap-3 mt-2">
+<div class="bg-surface-container-low p-3 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">image</span>
+<span class="text-xs font-semibold">Anatomi Atlası v2.1</span>
+</div>
+<div class="bg-surface-container-low p-3 rounded-xl flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">play_circle</span>
+<span class="text-xs font-semibold">Hızlı Video Özet</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Suggestions Area -->
+<div class="mb-4">
+<p class="text-[11px] font-bold text-outline uppercase tracking-widest ml-1 mb-3">Hızlı Öneriler</p>
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container-lowest text-primary text-sm font-semibold rounded-full border border-outline-variant/30 hover:bg-primary hover:text-white transition-all">
+                    Bugün ne çalışmalıyım?
+                </button>
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container-lowest text-primary text-sm font-semibold rounded-full border border-outline-variant/30 hover:bg-primary hover:text-white transition-all">
+                    Anatomi için ipucu ver
+                </button>
+<button class="whitespace-nowrap px-5 py-2.5 bg-surface-container-lowest text-primary text-sm font-semibold rounded-full border border-outline-variant/30 hover:bg-primary hover:text-white transition-all">
+                    Yanlışlarımı analiz et
+                </button>
+</div>
+</div>
+<!-- Input Bar (Floating) -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-4xl z-40 px-2">
+<div class="bg-white/90 backdrop-blur-xl shadow-2xl rounded-[2rem] p-2 flex items-center gap-2 border border-outline-variant/20">
+<button class="w-12 h-12 flex items-center justify-center rounded-full text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-outline/60 font-medium py-3 px-2" placeholder="Dr. Scholar'a bir soru sor..." type="text"/>
+<button class="w-12 h-12 bg-gradient-to-br from-primary to-primary-container text-white flex items-center justify-center rounded-full shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl no-border shadow-[0_-4px_20px_rgba(0,0,0,0.02)] rounded-t-[2rem]">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Dashboard</span>
+</a>
+<!-- Program -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">calendar_today</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Program</span>
+</a>
+<!-- Analiz -->
+<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 px-5 py-2 hover:text-teal-600 transition-colors" href="#">
+<span class="material-symbols-outlined mb-1">insights</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">Analiz</span>
+</a>
+<!-- AI Chat (Active) -->
+<a class="flex flex-col items-center justify-center bg-teal-50 dark:bg-teal-900/40 text-teal-800 dark:text-teal-200 rounded-2xl px-5 py-2 scale-110 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="font-inter text-[11px] font-semibold tracking-wide">AI Chat</span>
+</a>
+</nav>
+<!-- Background Decoration -->
+<div class="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+<div class="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-surface-tint opacity-5 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary opacity-5 rounded-full blur-[100px]"></div>
+</div>
+</body></html>
