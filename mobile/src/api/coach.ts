@@ -85,8 +85,22 @@ export const fetchPlanOverview = async (): Promise<PlanOverview | null> => {
     return res.data;
 };
 
-export const generatePlan = async (turNumber: number = 1): Promise<PlanOverview> => {
-    const res = await client.post('/students/me/plan/generate', { tur_number: turNumber });
+export interface BlockConfigItem {
+    subject: string;
+    order: number;
+    reading_days: number;
+    question_days: number;
+}
+
+export const generatePlan = async (
+    turNumber: number = 1,
+    customBlockConfig?: BlockConfigItem[],
+): Promise<PlanOverview> => {
+    const body: Record<string, any> = { tur_number: turNumber };
+    if (customBlockConfig && customBlockConfig.length > 0) {
+        body.custom_block_config = customBlockConfig;
+    }
+    const res = await client.post('/students/me/plan/generate', body);
     return res.data;
 };
 

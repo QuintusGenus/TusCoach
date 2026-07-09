@@ -44,3 +44,40 @@ export const BUILDER_DEFAULTS = {
 // ─── Day Labels ──────────────────────────────────────────────
 export const WEEKDAY_LABELS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 export const WEEKDAY_FULL = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+
+// ─── Tur Block Configs (mirrors backend app/core/constants.py TUR_CONFIGS) ────
+// Recommended reading/question days per subject, per tur. "large" subjects
+// (Dahiliye, Pediatri) get more days. Used to seed the per-subject depth editor.
+export interface TurBlockConfig {
+  defaultReadingDays: number;
+  defaultQuestionDays: number;
+  largeSubjects: string[];
+  largeReadingDays: number;
+  largeQuestionDays: number;
+}
+
+export const TUR_BLOCK_CONFIGS: Record<number, TurBlockConfig> = {
+  1: { defaultReadingDays: 4, defaultQuestionDays: 2, largeSubjects: ['Dahiliye', 'Pediatri'], largeReadingDays: 6, largeQuestionDays: 3 },
+  2: { defaultReadingDays: 3, defaultQuestionDays: 2, largeSubjects: ['Dahiliye', 'Pediatri'], largeReadingDays: 4, largeQuestionDays: 2 },
+  3: { defaultReadingDays: 2, defaultQuestionDays: 1, largeSubjects: ['Dahiliye', 'Pediatri'], largeReadingDays: 3, largeQuestionDays: 2 },
+  4: { defaultReadingDays: 1, defaultQuestionDays: 1, largeSubjects: ['Dahiliye', 'Pediatri'], largeReadingDays: 2, largeQuestionDays: 1 },
+};
+
+/** Recommended reading/question days for a subject under a given tur. */
+export function recommendedDaysFor(
+  turNumber: number,
+  subject: string,
+): { reading: number; question: number } {
+  const cfg = TUR_BLOCK_CONFIGS[turNumber] ?? TUR_BLOCK_CONFIGS[1];
+  if (cfg.largeSubjects.includes(subject)) {
+    return { reading: cfg.largeReadingDays, question: cfg.largeQuestionDays };
+  }
+  return { reading: cfg.defaultReadingDays, question: cfg.defaultQuestionDays };
+}
+
+// Per-subject reading/question day overrides keyed by subject name.
+export type BlockDays = Record<string, { reading: number; question: number }>;
+
+// Stepper bounds for the depth editor (mirrors backend Field(ge=0, le=30)).
+export const BLOCK_DAY_MIN = 0;
+export const BLOCK_DAY_MAX = 30;

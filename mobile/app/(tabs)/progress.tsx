@@ -19,6 +19,7 @@ import {
   fetchDailyStats,
 } from '../../src/api/coach';
 import { fetchExams } from '../../src/api/exams';
+import { getMastery, MasteryItem } from '../../src/api/qbank';
 import { colors, shadows, typography, radius, useThemeColors } from '../../src/ui/theme';
 
 // ─── Donut Chart ────────────────────────────────────────────
@@ -134,11 +135,18 @@ export default function AnalyticsPage() {
     retry: false,
   });
 
+  const { data: mastery = [], refetch: refetchMastery } = useQuery({
+    queryKey: ['qbank', 'mastery'],
+    queryFn: getMastery,
+    retry: false,
+  });
+
   const isRefreshing = isLoading;
   const handleRefresh = () => {
     refetchSummary();
     refetchWeekly();
     refetchDaily();
+    refetchMastery();
   };
 
   // ─── Compute error distribution from exams ────────────────
@@ -383,6 +391,51 @@ export default function AnalyticsPage() {
               <Text style={styles.summaryValue}>{daysWithStudy}</Text>
               <Text style={styles.summaryLabel}>Aktif Gün</Text>
             </View>
+          </View>
+        )}
+
+        {/* ─── QBank Mastery ──────────────────────────────── */}
+        {mastery.length > 0 && (
+          <View style={styles.insightsSection}>
+            <View style={styles.insightsHeader}>
+              <MaterialIcons name="auto-graph" size={20} color={c.primary.main} />
+              <Text style={styles.insightsTitle}>Soru Bankası Hakimiyeti</Text>
+            </View>
+            {(['temel', 'klinik'] as const).map((track) => {
+              const trackItems = mastery.filter((m: MasteryItem) => m.test === track);
+              if (trackItems.length === 0) return null;
+              return (
+                <View key={track} style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: c.onSurface.variant, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+                    {track === 'temel' ? 'Temel Bilimler' : 'Klinik Bilimler'}
+                  </Text>
+                  {trackItems.map((m: MasteryItem) => {
+                    const barColor = m.rate >= 0.8 ? '#2E7D32' : m.rate >= 0.5 ? '#E65100' : '#C62828';
+                    return (
+                      <TouchableOpacity
+                        key={`${m.test}-${m.subject}`}
+                        style={{ marginBottom: 10 }}
+                        activeOpacity={0.7}
+                        onPress={() => router.push({ pathname: '/(tabs)/mastery_detail', params: { subject: m.subject } } as any)}
+                      >
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <Text style={{ fontSize: 13, color: c.onSurface.main, fontWeight: '500' }}>{m.subject}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ fontSize: 12, color: barColor, fontWeight: '700' }}>
+                              {(m.rate * 100).toFixed(0)}% ({m.correct}/{m.attempts})
+                            </Text>
+                            <MaterialIcons name="chevron-right" size={14} color={c.outline.main} />
+                          </View>
+                        </View>
+                        <View style={{ height: 6, backgroundColor: colors.surface.containerHighest, borderRadius: 3, overflow: 'hidden' }}>
+                          <View style={{ height: 6, width: `${m.rate * 100}%`, backgroundColor: barColor, borderRadius: 3 }} />
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              );
+            })}
           </View>
         )}
 

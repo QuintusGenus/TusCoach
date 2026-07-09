@@ -262,6 +262,46 @@ def enrich_tasks(db: Session, tasks: List[PlanTask]) -> List[dict]:
 
 # ── Tur skeleton builder ──
 
+def _build_skeleton_from_blocks(block_config: List[dict], start_date: date) -> List[dict]:
+    """
+    Build a day-by-day skeleton from an explicit per-subject block config.
+    Each block is {subject, order, reading_days, question_days}. Blocks are laid
+    out in ascending `order`. Used when the student customizes their own plan.
+    """
+    skeleton = []
+    current_date = start_date
+
+    for block in sorted(block_config, key=lambda b: b["order"]):
+        subject = block["subject"]
+        block_order = block["order"]
+        reading_days = block["reading_days"]
+        question_days = block["question_days"]
+
+        for day_num in range(reading_days):
+            skeleton.append({
+                "date": current_date,
+                "subject": subject,
+                "phase": "reading",
+                "block_order": block_order,
+                "day_in_phase": day_num + 1,
+                "total_phase_days": reading_days,
+            })
+            current_date += timedelta(days=1)
+
+        for day_num in range(question_days):
+            skeleton.append({
+                "date": current_date,
+                "subject": subject,
+                "phase": "question",
+                "block_order": block_order,
+                "day_in_phase": day_num + 1,
+                "total_phase_days": question_days,
+            })
+            current_date += timedelta(days=1)
+
+    return skeleton
+
+
 def _build_tur_skeleton(tur_number: int, start_date: date) -> List[dict]:
     """
     Build a deterministic day-by-day skeleton for a tur.
@@ -882,11 +922,19 @@ def _generate_stub_plan(context: dict, skeleton: List[dict]) -> list:
 # ── Main generation ──
 
 def generate_study_plan(
-    db: Session, user_id: int, tur_number: int = 1, start_date: Optional[date] = None
+    db: Session,
+    user_id: int,
+    tur_number: int = 1,
+    start_date: Optional[date] = None,
+    custom_block_config: Optional[List[dict]] = None,
 ) -> StudyPlan:
     """
-    Generate a new tur-based study plan.
-    Archives any existing active plan, then creates a new one.
+    Generate a study plan. Archives any existing active plan, then creates a new one.
+
+    If `custom_block_config` is provided (list of {subject, order, reading_days,
+    question_days}), the plan structure is built from the student's own choices
+    instead of the fixed tur preset. `tur_number` is still used for labeling and
+    task-detail heuristics.
     """
     if tur_number not in TUR_CONFIGS:
         raise ValueError(f"Invalid tur_number: {tur_number}. Must be 1-4.")
@@ -894,7 +942,24 @@ def generate_study_plan(
     if start_date is None:
         start_date = date.today()
 
-    days = compute_tur_duration(tur_number)
+    # Validate custom config subjects against the known TUS subject set.
+    if custom_block_config:
+        valid_subjects = set(TUS_SUBJECT_ORDER)
+        custom_block_config = [
+            b for b in custom_block_config
+            if b.get("subject") in valid_subjects
+            and (b.get("reading_days", 0) + b.get("question_days", 0)) > 0
+        ]
+        if not custom_block_config:
+            raise ValueError("Özel plan yapılandırması geçerli bir blok içermiyor.")
+
+    # 4a. Build skeleton — from the student's custom config or the tur preset.
+    if custom_block_config:
+        skeleton = _build_skeleton_from_blocks(custom_block_config, start_date)
+    else:
+        skeleton = _build_tur_skeleton(tur_number, start_date)
+
+    days = len(skeleton)
     end_date = start_date + timedelta(days=days - 1)
 
     # 1. Archive old active plans
@@ -915,13 +980,10 @@ def generate_study_plan(
     # 3. Gather context
     context = _gather_plan_context(db, user_id)
 
-    # 4. Build tur skeleton
-    skeleton = _build_tur_skeleton(tur_number, start_date)
-
-    # 5. Call LLM (or stub) for task details
+    # 4. Call LLM (or stub) for task details (skeleton built above)
     plan_days = _call_llm_for_plan(context, skeleton, tur_number)
 
-    # 6. Create plan
+    # 5. Create plan
     plan = StudyPlan(
         student_id=user_id,
         start_date=start_date,
@@ -929,6 +991,7 @@ def generate_study_plan(
         version=max_version + 1,
         status="active",
         tur_number=tur_number,
+        custom_block_config=json.dumps(custom_block_config) if custom_block_config else None,
     )
     db.add(plan)
     db.flush()

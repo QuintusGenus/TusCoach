@@ -65,6 +65,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="practice"
+        options={{
+          title: 'Pratik',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.iconWrap, focused && styles.activeIconWrap, focused && { backgroundColor: isDark ? c.primary.container : c.surface.containerLow }]}>
+              <MaterialIcons name="quiz" size={24} color={color} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="chat"
         options={{
           title: 'AI Chat',
@@ -76,6 +87,7 @@ export default function TabLayout() {
         }}
       />
       {/* Hidden tabs — accessible via stack navigation */}
+      <Tabs.Screen name="qbank_exam" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="exams" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="study" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="inbox" options={{ href: null, headerShown: false }} />
@@ -83,6 +95,7 @@ export default function TabLayout() {
       <Tabs.Screen name="messages" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="more" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="two" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="mastery_detail" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 }

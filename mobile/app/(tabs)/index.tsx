@@ -25,11 +25,13 @@ import {
   completeTask,
   fetchStatsSummary,
   fetchWeeklyStats,
+  fetchPlanOverview,
+  fetchPlanStructure,
 } from '../../src/api/coach';
 import { fetchExams } from '../../src/api/exams';
 import { useAuthStore } from '../../src/state/authStore';
-import { TUS_SUBJECTS, SUBJECT_COLORS } from '../../src/constants/subjects';
 import { StudyTimer } from '../../src/components/StudyTimer';
+import { HomePlanSummary } from '../../src/components/HomePlanSummary';
 import { useTimerStore } from '../../src/state/timerStore';
 import { colors, shadows, typography, radius, spacing, useThemeColors, useIsDark } from '../../src/ui/theme';
 
@@ -43,6 +45,7 @@ function ProgressRing({
   size?: number;
   strokeWidth?: number;
 }) {
+  const c = useThemeColors();
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const clamped = Math.min(Math.max(progress, 0), 1);
@@ -52,15 +55,15 @@ function ProgressRing({
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
       <Defs>
         <SvgGrad id="ringGrad" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={colors.secondary.main} />
-          <Stop offset="1" stopColor={colors.secondary.fixedDim} />
+          <Stop offset="0" stopColor={c.primary.main} />
+          <Stop offset="1" stopColor={c.secondary.main} />
         </SvgGrad>
       </Defs>
       <Circle
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke={colors.surface.containerHighest}
+        stroke={c.surface.containerHighest}
         strokeWidth={strokeWidth}
         fill="transparent"
       />
@@ -132,6 +135,19 @@ export default function Dashboard() {
     retry: false,
   });
 
+  const { data: planOverview } = useQuery({
+    queryKey: ['plan-overview'],
+    queryFn: fetchPlanOverview,
+    retry: false,
+  });
+
+  const { data: planStructure } = useQuery({
+    queryKey: ['plan-structure'],
+    queryFn: fetchPlanStructure,
+    enabled: !!planOverview?.id,
+    retry: false,
+  });
+
   // ─── Computed ──────────────────────────────────────────────
   const userName = user?.display_name || (user?.email ? user.email.split('@')[0] : '');
   const weekProgress = summary?.week_target_minutes
@@ -148,7 +164,12 @@ export default function Dashboard() {
 
   const todayTasks = plan?.tasks || [];
   const completedTasks = todayTasks.filter((t: any) => t.status === 'completed').length;
-  const currentTask = todayTasks.find((t: any) => t.status !== 'completed');
+  const pendingTasks = todayTasks.filter((t: any) => t.status !== 'completed');
+  const currentTask = pendingTasks[0];
+  const nextTask = pendingTasks[1];
+
+  const now = new Date();
+  const todayLabel = `${now.toLocaleDateString('tr-TR', { weekday: 'long' })}, ${now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })}`;
 
   const getGreetingTime = () => {
     const h = new Date().getHours();
@@ -171,33 +192,32 @@ export default function Dashboard() {
   const liveMinutes = Math.floor(liveStudySeconds / 60);
   const todayMinutesDisplay = (summary?.today_minutes || 0) + (isTimerActive ? liveMinutes : 0);
 
-  // ─── Quick subjects (top 4 for grid) ──────────────────────
-  const quickSubjects = ['Biyokimya', 'Mikrobiyoloji', 'Psikiyatri', 'Pediatri'];
-
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.surface.main }]} edges={['top']}>
-      {/* ─── Top App Bar ──────────────────────────────────── */}
-      <View style={styles.topBar}>
-        <View style={styles.topBarLeft}>
-          <View style={[styles.avatar, { backgroundColor: c.primary.container }]}>
-            <MaterialIcons name="person" size={20} color={c.primary.onContainer} />
-          </View>
-          <Text style={[styles.appTitle, { color: c.primary.main }]}>TusCoach App</Text>
+      {/* ─── Header (date · greeting · avatar) ────────────── */}
+      <View style={styles.header}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.headerDate, { color: c.onSurface.variant }]}>{todayLabel}</Text>
+          <Text style={[styles.headerGreeting, { color: c.onSurface.main }]}>
+            {getGreetingTime()}, {userName || 'Dr.'}
+          </Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 4 }}>
-          <TouchableOpacity
-            style={styles.notifBtn}
-            onPress={() => router.push('/(tabs)/inbox' as any)}
-          >
-            <MaterialIcons name="notifications-none" size={24} color={c.primary.main} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.notifBtn}
-            onPress={() => router.push('/(tabs)/settings' as any)}
-          >
-            <MaterialIcons name="settings" size={24} color={c.primary.main} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.headerIconBtn, { backgroundColor: c.surface.containerLow }]}
+          onPress={() => router.push('/(tabs)/inbox' as any)}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="notifications-none" size={22} color={c.onSurface.variant} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.headerAvatar, { backgroundColor: c.primary.container }]}
+          onPress={() => router.push('/(tabs)/settings' as any)}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.headerAvatarText, { color: c.primary.onContainer }]}>
+            {(userName || 'D').charAt(0).toUpperCase()}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -208,164 +228,124 @@ export default function Dashboard() {
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={c.primary.main} />
         }
       >
-        {/* ─── Welcome Section ──────────────────────────────── */}
-        <View style={styles.welcomeSection}>
-          <Text style={[styles.greetingLabel, { color: c.onSurface.variant }]}>{getGreetingTime()}, {userName || 'Dr.'}</Text>
-          <Text style={[styles.heroTitle, { color: c.primary.main }]}>
-            Bugün %{Math.round((todayMinutesDisplay / Math.max(summary?.today_target_minutes || 1, 1)) * 100)} daha odaklısın.
-          </Text>
-        </View>
-
-        {/* ─── Chronometer / Study Timer ──────────────────────── */}
-        <StudyTimer onSessionSaved={() => {
-          refetchSummary();
-          refetchPlan();
-          refetchWeekly();
-        }} />
-
-        {/* ─── Weekly Progress Hero Card ────────────────────── */}
-        <View style={[styles.heroCard, { backgroundColor: c.surface.containerLowest }]}>
-          <View style={styles.heroContent}>
-            <View style={styles.heroLeft}>
-              <View style={[styles.heroBadge, { backgroundColor: c.secondary.container }]}>
-                <Text style={[styles.heroBadgeText, { color: c.secondary.onContainer }]}>HAFTALIK HEDEF</Text>
-              </View>
-              <Text style={[styles.heroPercent, { color: c.primary.main }]}>{weekPercent}%</Text>
-              <Text style={[styles.heroSubtext, { color: c.onSurface.variant }]}>
-                Bu hafta {weekHoursTarget ? `${weekHoursTarget} saatlik hedefin ${weekHoursCompleted} saatini` : `${weekHoursCompleted} saat`} tamamladın.
-              </Text>
-            </View>
-            <View style={styles.heroRing}>
-              <ProgressRing progress={weekProgress} size={140} strokeWidth={12} />
-              <View style={styles.heroRingCenter}>
-                <MaterialIcons name="auto-awesome" size={32} color={c.secondary.main} />
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* ─── Daily Stats Row ──────────────────────────────── */}
-        {summary && (
-          <View style={[styles.statsRow, { backgroundColor: c.surface.containerLowest }]}>
-            <View style={styles.statItem}>
-              <MaterialIcons name="local-fire-department" size={18} color={c.tertiary.fixedDim} />
-              <Text style={[styles.statValue, { color: c.primary.main }]}>{summary.streak_days}</Text>
-              <Text style={[styles.statLabel, { color: c.onSurface.variant }]}>gün seri</Text>
-            </View>
-            <View style={[styles.statDivider, { backgroundColor: c.outline.variant }]} />
-            <View style={styles.statItem}>
-              <MaterialIcons name="schedule" size={18} color={c.primary.fixedDim} />
-              <Text style={[styles.statValue, { color: c.primary.main }]}>{todayMinutesDisplay}</Text>
-              <Text style={[styles.statLabel, { color: c.onSurface.variant }]}>dk bugün</Text>
-            </View>
-            <View style={[styles.statDivider, { backgroundColor: c.outline.variant }]} />
-            <View style={styles.statItem}>
-              <MaterialIcons name="check-circle" size={18} color={c.secondary.fixedDim} />
-              <Text style={[styles.statValue, { color: c.primary.main }]}>{completedTasks}/{todayTasks.length}</Text>
-              <Text style={[styles.statLabel, { color: c.onSurface.variant }]}>görev</Text>
-            </View>
-            {summary.exam_countdown_days != null && (
-              <>
-                <View style={[styles.statDivider, { backgroundColor: c.outline.variant }]} />
-                <View style={styles.statItem}>
-                  <MaterialIcons name="school" size={18} color={c.secondary.main} />
-                  <Text style={[styles.statValue, { color: c.primary.main }]}>{summary.exam_countdown_days}</Text>
-                  <Text style={[styles.statLabel, { color: c.onSurface.variant }]}>gün kaldı</Text>
-                </View>
-              </>
-            )}
-          </View>
-        )}
-
-        {/* ─── Motivation Quote Card ────────────────────────── */}
-        <View style={[styles.quoteCard, { backgroundColor: c.primary.container }]}>
+        {/* ─── ŞİMDİ ODAKLAN — focus hero ───────────────────── */}
+        <View style={[styles.focusHero, { backgroundColor: c.primary.main }]}>
           <MaterialIcons
-            name="format-quote" size={28} color={c.primary.onContainer}
-            style={{ opacity: 0.3, position: 'absolute', top: 16, right: 20 }}
+            name="auto-awesome" size={120} color={c.primary.onPrimary}
+            style={styles.focusHeroGlyph}
           />
-          <Text style={[styles.quoteText, { color: c.primary.onContainer }]}>
-            "Büyük işler, küçük başlangıçların disiplinli tekrarıdır."
+          <Text style={[styles.focusEyebrow, { color: c.primary.onPrimary }]}>ŞİMDİ ODAKLAN</Text>
+          <Text style={[styles.focusSubject, { color: c.primary.onPrimary }]}>
+            {currentTask?.subject || 'Serbest çalışma'}
           </Text>
-          <Text style={[styles.quoteAuthor, { color: c.primary.onContainer }]}>— TUS Coach AI</Text>
+          <Text style={[styles.focusMeta, { color: c.primary.onPrimary }]}>
+            {currentTask
+              ? `${currentTask.topic_name && currentTask.topic_name !== 'Genel' ? currentTask.topic_name + ' · ' : ''}${currentTask.phase === 'reading' ? 'Konu çalışma' : 'Soru çözme'} · ${currentTask.target_minutes} dk`
+              : 'Kronometreyi başlat, oturumunu kaydet'}
+          </Text>
+          <View style={styles.focusActions}>
+            <TouchableOpacity
+              style={[styles.focusStartBtn, { backgroundColor: c.primary.onPrimary }]}
+              activeOpacity={0.85}
+              onPress={() => router.push(
+                (currentTask?.subject ? `/chronometer?subject=${encodeURIComponent(currentTask.subject)}` : '/chronometer') as any,
+              )}
+            >
+              <MaterialIcons name="play-arrow" size={24} color={c.primary.main} />
+              <Text style={[styles.focusStartText, { color: c.primary.main }]}>Başla</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.focusTimerBtn, { borderColor: c.primary.onPrimary + '55' }]}
+              activeOpacity={0.7}
+              onPress={() => router.push('/chronometer' as any)}
+            >
+              <MaterialIcons name="timer" size={22} color={c.primary.onPrimary} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* ─── Upcoming Task / Current Session ──────────────── */}
-        {currentTask && (
-          <TouchableOpacity style={[styles.upcomingCard, { backgroundColor: c.surface.containerLow }]} activeOpacity={0.7} onPress={() => router.push('/(tabs)/plan')}>
-            <View style={[styles.upcomingIcon, { backgroundColor: c.secondary.container }]}>
-              <MaterialIcons name={(SUBJECT_ICONS[currentTask.subject || ''] || 'menu-book') as any} size={28} color={c.secondary.main} />
+        {/* ─── Haftalık Hedef ───────────────────────────────── */}
+        <View style={[styles.goalCard, { backgroundColor: c.surface.containerLowest }]}>
+          <View style={styles.goalRing}>
+            <ProgressRing progress={weekProgress} size={64} strokeWidth={7} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text style={[styles.goalLabel, { color: c.onSurface.variant }]}>Haftalık Hedef</Text>
+            <Text style={[styles.goalValue, { color: c.onSurface.main }]}>
+              {weekHoursCompleted}
+              <Text style={[styles.goalValueDim, { color: c.onSurface.variant }]}> / {weekHoursTarget ?? '—'} saat</Text>
+            </Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={[styles.goalRemain, { color: c.primary.main }]}>
+              {weekHoursTarget ? Math.max(0, weekHoursTarget - weekHoursCompleted) : weekPercent}
+              {!weekHoursTarget && '%'}
+            </Text>
+            <Text style={[styles.goalRemainLabel, { color: c.onSurface.variant }]}>
+              {weekHoursTarget ? 'saat kaldı' : 'tamam'}
+            </Text>
+          </View>
+        </View>
+
+        {/* ─── Quiet stat cards ─────────────────────────────── */}
+        <View style={styles.statCardsRow}>
+          <View style={[styles.statCard, { backgroundColor: c.surface.containerLowest }]}>
+            <MaterialIcons name="local-fire-department" size={20} color={c.tertiary.fixedDim} />
+            <Text style={[styles.statCardValue, { color: c.onSurface.main }]}>{summary?.streak_days ?? 0}</Text>
+            <Text style={[styles.statCardLabel, { color: c.onSurface.variant }]}>gün seri</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: c.surface.containerLowest }]}>
+            <MaterialIcons name="timer" size={20} color={c.primary.main} />
+            <Text style={[styles.statCardValue, { color: c.onSurface.main }]}>{todayMinutesDisplay}</Text>
+            <Text style={[styles.statCardLabel, { color: c.onSurface.variant }]}>dk bugün</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: c.surface.containerLowest }]}>
+            <MaterialIcons name="task-alt" size={20} color={c.secondary.main} />
+            <Text style={[styles.statCardValue, { color: c.onSurface.main }]}>{completedTasks}/{todayTasks.length}</Text>
+            <Text style={[styles.statCardLabel, { color: c.onSurface.variant }]}>görev</Text>
+          </View>
+        </View>
+
+        {/* ─── Sıradaki görev ───────────────────────────────── */}
+        {nextTask && (
+          <TouchableOpacity style={[styles.nextCard, { backgroundColor: c.surface.containerLow }]} activeOpacity={0.7} onPress={() => router.push('/(tabs)/plan')}>
+            <View style={[styles.nextIcon, { backgroundColor: c.secondary.container }]}>
+              <MaterialIcons name={(SUBJECT_ICONS[nextTask.subject || ''] || 'menu-book') as any} size={22} color={c.secondary.main} />
             </View>
-            <View style={styles.upcomingContent}>
-              <Text style={[styles.upcomingTitle, { color: c.primary.main }]}>
-                {currentTask.subject}{currentTask.topic_name ? ` - ${currentTask.topic_name}` : ''}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.nextEyebrow, { color: c.onSurface.variant }]}>SIRADAKİ GÖREV</Text>
+              <Text style={[styles.nextTitle, { color: c.onSurface.main }]} numberOfLines={1}>
+                {nextTask.subject}{nextTask.topic_name && nextTask.topic_name !== 'Genel' ? ` · ${nextTask.topic_name}` : ''}
               </Text>
-              <Text style={[styles.upcomingMeta, { color: c.onSurface.variant }]}>
-                {currentTask.phase === 'reading' ? 'Konu Çalışma' : 'Soru Çözme'} • {currentTask.target_minutes} dk
+              <Text style={[styles.nextMeta, { color: c.onSurface.variant }]}>
+                {nextTask.phase === 'reading' ? 'Konu çalışma' : 'Soru çözme'} · {nextTask.target_minutes} dk
               </Text>
             </View>
-            <TouchableOpacity style={[styles.playBtn, { backgroundColor: c.surface.containerLowest }]} onPress={() => router.push('/(tabs)/study' as any)}>
-              <MaterialIcons name="play-arrow" size={22} color={c.primary.main} />
-            </TouchableOpacity>
+            <MaterialIcons name="chevron-right" size={22} color={c.outline.main} />
           </TouchableOpacity>
         )}
 
-        {/* ─── Last Exam Summary ────────────────────────────── */}
-        {latestExam && (
-          <TouchableOpacity style={[styles.examCard, { backgroundColor: c.surface.containerLowest }]} activeOpacity={0.7} onPress={() => router.push('/(tabs)/exams' as any)}>
-            <View style={styles.examHeader}>
-              <Text style={[styles.examLabel, { color: c.primary.main }]}>Son Deneme Özeti</Text>
-              <Text style={[styles.examScore, { color: c.tertiary.main }]}>{Math.round(totalNet)} / 240 Net</Text>
-            </View>
-            <View style={[styles.examBar, { backgroundColor: c.surface.containerHighest }]}>
-              <View style={[styles.examBarFill, { width: `${Math.min((totalNet / 240) * 100, 100)}%`, backgroundColor: c.primary.main }]} />
-            </View>
-            <View style={styles.examChips}>
-              {latestExam.breakdowns?.slice(0, 2).map((b: any, i: number) => (
-                <View key={i} style={[styles.examChip, { backgroundColor: b.net < 5 ? c.tertiary.fixed : c.secondary.container }]}>
-                  <MaterialIcons name={b.net < 5 ? 'warning' : 'trending-up'} size={14} color={b.net < 5 ? c.tertiary.main : c.secondary.main} />
-                  <Text style={[styles.examChipText, { color: b.net < 5 ? c.tertiary.main : c.secondary.main }]}>
-                    {b.subject}: {b.net < 5 ? 'Kritik' : `+${Math.round(b.net)} Net`}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <View style={styles.examLink}>
-              <Text style={[styles.examLinkText, { color: c.primary.main }]}>Analize Git</Text>
-              <MaterialIcons name="chevron-right" size={18} color={c.primary.main} />
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* ─── AI Coach Message Preview ─────────────────────── */}
+        {/* ─── AI coach nudge ───────────────────────────────── */}
         {message && (
-          <TouchableOpacity style={[styles.coachCard, { backgroundColor: c.surface.containerLowest, borderColor: c.outline.variant + '33' }]} activeOpacity={0.7} onPress={() => router.push('/(tabs)/chat')}>
-            <View style={styles.coachHeader}>
-              <View style={[styles.coachIcon, { backgroundColor: c.primary.container }]}>
-                <MaterialIcons name="smart-toy" size={16} color={c.primary.onContainer} />
-              </View>
-              <Text style={[styles.coachLabel, { color: c.primary.main }]}>AI COACH ÖNERİSİ</Text>
+          <TouchableOpacity
+            style={[styles.nudge, { backgroundColor: c.primary.container }]}
+            activeOpacity={0.75}
+            onPress={() => router.push('/(tabs)/chat')}
+          >
+            <View style={[styles.nudgeIcon, { backgroundColor: c.primary.main }]}>
+              <MaterialIcons name="auto-awesome" size={18} color={c.primary.onPrimary} />
             </View>
-            <Text style={[styles.coachBody, { color: c.onSurface.main }]} numberOfLines={3}>"{message.body}"</Text>
+            <Text style={[styles.nudgeText, { color: c.primary.onContainer }]} numberOfLines={2}>
+              {message.body}
+            </Text>
+            <MaterialIcons name="chevron-right" size={22} color={c.primary.onContainer} />
           </TouchableOpacity>
         )}
 
-        {/* ─── Subject Quick Access Grid ────────────────────── */}
-        <View style={styles.subjectGrid}>
-          {quickSubjects.map((sub) => (
-            <TouchableOpacity key={sub} style={[styles.subjectCard, { backgroundColor: c.surface.containerLowest }]} activeOpacity={0.7} onPress={() => router.push('/(tabs)/study' as any)}>
-              <View style={[styles.subjectIconWrap, { backgroundColor: c.surface.containerLow }]}>
-                <MaterialIcons name={(SUBJECT_ICONS[sub] || 'menu-book') as any} size={24} color={c.primary.main} />
-              </View>
-              <Text style={[styles.subjectName, { color: c.primary.main }]}>{sub}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+        {/* ─── Program summary + week strip ─────────────────── */}
+        <HomePlanSummary overview={planOverview} structure={planStructure} />
 
-      {/* ─── FAB ────────────────────────────────────────────── */}
-      <TouchableOpacity style={[styles.fab, { backgroundColor: c.primary.main }]} activeOpacity={0.85} onPress={() => router.push('/(tabs)/study' as any)}>
-        <MaterialIcons name="add" size={28} color={c.primary.onPrimary} />
-      </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -378,6 +358,77 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
+  // ── Odak header ──
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12,
+  },
+  headerDate: { ...typography.caption, textTransform: 'capitalize' },
+  headerGreeting: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, marginTop: 1 },
+  headerIconBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerAvatar: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+  headerAvatarText: { fontSize: 16, fontWeight: '800' },
+
+  // ── ŞİMDİ ODAKLAN hero ──
+  focusHero: {
+    marginHorizontal: 20, marginTop: 4, marginBottom: 16,
+    borderRadius: radius['2xl'], padding: 22, overflow: 'hidden', ...shadows.hero,
+  },
+  focusHeroGlyph: { position: 'absolute', right: -18, top: -14, opacity: 0.12 },
+  focusEyebrow: { ...typography.labelWide, opacity: 0.8, marginBottom: 8 },
+  focusSubject: { fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  focusMeta: { ...typography.body, opacity: 0.85, marginTop: 4 },
+  focusActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 },
+  focusStartBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    flex: 1, paddingVertical: 15, borderRadius: radius.full,
+  },
+  focusStartText: { fontSize: 16, fontWeight: '800' },
+  focusTimerBtn: {
+    width: 52, height: 52, borderRadius: 26, borderWidth: 1.5,
+    justifyContent: 'center', alignItems: 'center',
+  },
+
+  // ── Haftalık Hedef ──
+  goalCard: {
+    flexDirection: 'row', alignItems: 'center',
+    marginHorizontal: 20, marginBottom: 16, padding: 16,
+    borderRadius: radius['2xl'], ...shadows.sm,
+  },
+  goalRing: { width: 64, height: 64, justifyContent: 'center', alignItems: 'center' },
+  goalLabel: { ...typography.caption },
+  goalValue: { fontSize: 22, fontWeight: '800', marginTop: 2 },
+  goalValueDim: { fontSize: 14, fontWeight: '600' },
+  goalRemain: { fontSize: 24, fontWeight: '800' },
+  goalRemainLabel: { ...typography.tiny, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // ── Stat cards ──
+  statCardsRow: { flexDirection: 'row', gap: 10, marginHorizontal: 20, marginBottom: 16 },
+  statCard: {
+    flex: 1, alignItems: 'center', paddingVertical: 16, gap: 6,
+    borderRadius: radius.xl, ...shadows.sm,
+  },
+  statCardValue: { fontSize: 22, fontWeight: '800' },
+  statCardLabel: { ...typography.tiny, textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // ── Sıradaki görev ──
+  nextCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 20, marginBottom: 16, padding: 14, borderRadius: radius.xl,
+  },
+  nextIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  nextEyebrow: { ...typography.tiny, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 },
+  nextTitle: { ...typography.bodyBold },
+  nextMeta: { ...typography.caption, marginTop: 1 },
+
+  // ── AI nudge ──
+  nudge: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 20, marginBottom: 16, padding: 14, borderRadius: radius.xl,
+  },
+  nudgeIcon: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  nudgeText: { ...typography.caption, flex: 1, lineHeight: 18 },
 
   // Top App Bar
   topBar: {
@@ -651,37 +702,6 @@ const styles = StyleSheet.create({
     color: colors.onSurface.main,
     lineHeight: 22,
     fontStyle: 'italic',
-  },
-
-  // Subject Grid
-  subjectGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: 20,
-    marginTop: 16,
-    gap: 12,
-  },
-  subjectCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: colors.surface.containerLowest,
-    borderRadius: radius.xl,
-    padding: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  subjectIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.surface.containerLow,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  subjectName: {
-    ...typography.bodyBold,
-    color: colors.primary.main,
-    fontSize: 13,
   },
 
   // Stats Row

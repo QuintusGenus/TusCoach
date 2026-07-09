@@ -43,6 +43,9 @@ router.include_router(notes_router)
 from app.api.v1.calendar import router as calendar_router
 router.include_router(calendar_router)
 
+from app.api.v1.qbank import router as qbank_router
+router.include_router(qbank_router)
+
 # Subjects endpoint (no auth needed)
 from app.core.constants import TUS_SUBJECTS
 

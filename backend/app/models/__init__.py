@@ -13,6 +13,7 @@ from app.models.notifications import Notification
 from app.models.preferences import StudentPreferences
 from app.models.chat import ChatThread, ChatMessage
 from app.models.note import Note
+from app.models.qbank import Question, QuestionAttempt, SRSState, QBankExamSession
 
 __all__ = [
     "Base",
@@ -27,4 +28,5 @@ __all__ = [
     "StudentPreferences",
     "ChatThread", "ChatMessage",
     "Note",
+    "Question", "QuestionAttempt", "SRSState", "QBankExamSession",
 ]

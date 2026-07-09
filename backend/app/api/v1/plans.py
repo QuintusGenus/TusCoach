@@ -80,8 +80,16 @@ def generate_plan(
     current_user: User = Depends(get_current_user),
 ) -> Any:
     """Generate a new tur-based study plan. Archives any existing active plan."""
+    custom_config = (
+        [b.model_dump() for b in body.custom_block_config]
+        if body.custom_block_config
+        else None
+    )
     plan = plan_service.generate_study_plan(
-        db, current_user.id, tur_number=body.tur_number
+        db,
+        current_user.id,
+        tur_number=body.tur_number,
+        custom_block_config=custom_config,
     )
     total = len(plan.tasks) if plan.tasks else 0
     completed = sum(1 for t in plan.tasks if t.status == "done") if plan.tasks else 0

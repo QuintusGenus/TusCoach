@@ -1,6 +1,10 @@
 """
 Celery tasks for TusCoach background processing.
 
+Morning reminder task fires daily at 08:00 Europe/Istanbul and sends
+"Bugünkü sorularınız hazır" push notifications to all active users.
+
+
 Reliability features:
 - Exponential backoff retries on transient errors (network, DB timeouts)
 - Row-level locking (SELECT … FOR UPDATE SKIP LOCKED) to prevent duplicate
@@ -32,6 +36,7 @@ from app.services.notification_service import (
     mark_notification_sent,
 )
 from app.services.workflow_engine import run_workflow
+from app.services.notification_service import enqueue_notification
 
 logger = logging.getLogger("tuscoach.tasks")
 
@@ -325,6 +330,49 @@ def inactivity_scan(self):
 # ---------------------------------------------------------------------------
 # nightly_daily_review
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# morning_reminder
+# ---------------------------------------------------------------------------
+@celery_app.task(
+    name="morning_reminder",
+    bind=True,
+    autoretry_for=_TRANSIENT,
+    retry_backoff=True,
+    retry_backoff_max=300,
+    retry_jitter=True,
+    max_retries=3,
+)
+def morning_reminder(self):
+    """
+    Send daily morning push notification to all users who have a registered device.
+    Fires at 08:00 Europe/Istanbul via beat schedule.
+    Quiet-hours logic is handled inside enqueue_notification.
+    """
+    from app.models.user import User
+
+    db = SessionLocal()
+    try:
+        users = db.query(User).filter(User.is_active.is_(True)).all()
+        sent = 0
+        for user in users:
+            enqueue_notification(
+                db=db,
+                user_id=user.id,
+                type="morning_reminder",
+                title="Günaydın! 📚",
+                body="Bugünkü sorularınız hazır. Pratik yapmaya başlayın!",
+                data={"route": "/(tabs)/practice"},
+            )
+            sent += 1
+        logger.info("morning_reminder complete: enqueued=%d", sent)
+        return {"enqueued": sent}
+    except _TRANSIENT:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 @celery_app.task(
     name="nightly_daily_review",
     bind=True,

@@ -9,13 +9,15 @@ import { usePlanGeneratorStore } from '../../state/planGeneratorStore';
 import { mapBuilderToTur, type TurResult } from './TurMapper';
 import {
   STATUS_OPTIONS, LEVEL_OPTIONS, WEEKDAY_LABELS, WEEKDAY_FULL,
+  recommendedDaysFor, BLOCK_DAY_MIN, BLOCK_DAY_MAX,
   type UserStatus, type UserLevel,
 } from '../../constants/planGenerator';
 import { SUBJECT_COLORS, type TUSSubject } from '../../constants/subjects';
+import type { BlockConfigItem } from '../../api/coach';
 import { typography, radius, shadows, useThemeColors } from '../../ui/theme';
 
 interface BuilderFlowProps {
-  onGenerate: (turNumber: number) => void;
+  onGenerate: (turNumber: number, customBlockConfig?: BlockConfigItem[]) => void;
   isGenerating: boolean;
 }
 
@@ -116,14 +118,15 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
   const store = usePlanGeneratorStore();
   const {
     examDate, status, level, weekdayHours, weekendHours, studyDays, styleRatio, excludedDates,
-    subjectOrder, moveSubject,
-    setExamDate, setStatus, setLevel, setWeekdayHours, setWeekendHours, setStudyDays, setStyleRatio,
+    subjectOrder, moveSubject, blockDays, setBlockDay,
+    setExamDate, setStatus, setLevel, setWeekdayHours, setWeekendHours, setStudyDays,
     toggleExcludedDate, reset,
   } = store;
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showShiftCal, setShowShiftCal] = useState(false);
   const [showSubjectOrder, setShowSubjectOrder] = useState(false);
+  const [showDepth, setShowDepth] = useState(false);
 
   const handleDateChange = (_: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -155,6 +158,32 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
   const weekdayCount = studyDays.filter(d => d < 5).length;
   const weekendCount = studyDays.filter(d => d >= 5).length;
   const hoursPerWeek = (weekdayCount * weekdayHours) + (weekendCount * weekendHours);
+
+  // ─── Per-subject depth ───────────────────────────────────────
+  // Effective days for each subject = user override, else the tur's recommendation.
+  // The plan length is decided here (sum of all reading+question days), so the
+  // student is genuinely building their own plan.
+  const turNumber = turResult?.turNumber ?? 1;
+  const effectiveBlocks = useMemo(() => subjectOrder.map((subject, i) => {
+    const rec = recommendedDaysFor(turNumber, subject);
+    const ov = blockDays[subject];
+    return {
+      subject,
+      order: i + 1,
+      reading: ov ? ov.reading : rec.reading,
+      question: ov ? ov.question : rec.question,
+      recommended: rec,
+      isCustom: !!ov && (ov.reading !== rec.reading || ov.question !== rec.question),
+    };
+  }), [subjectOrder, blockDays, turNumber]);
+
+  const totalPlanDays = effectiveBlocks.reduce((s, b) => s + b.reading + b.question, 0);
+  const totalPlanWeeks = Math.max(1, Math.ceil(totalPlanDays / 7));
+  const anyCustomDepth = effectiveBlocks.some((b) => b.isCustom);
+
+  const customBlockConfig: BlockConfigItem[] = effectiveBlocks
+    .filter((b) => b.reading + b.question > 0)
+    .map((b) => ({ subject: b.subject, order: b.order, reading_days: b.reading, question_days: b.question }));
 
   return (
     <View style={[styles.container, { backgroundColor: c.surface.main }]}>
@@ -277,26 +306,6 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
           </View>
         )}
 
-        {/* ─── Style Ratio ────────────────────────────────── */}
-        <View style={[styles.section, { backgroundColor: c.surface.containerLowest }]}>
-          <Text style={[styles.sectionLabel, { color: c.onSurface.variant }]}>ÇALIŞMA STİLİ</Text>
-          <View style={styles.ratioLabels}>
-            <Text style={[styles.ratioLabel, { color: c.onSurface.variant }]}>Okuma</Text>
-            <Text style={[styles.ratioLabel, { color: c.onSurface.variant }]}>Soru</Text>
-          </View>
-          <Slider
-            minimumValue={0} maximumValue={100} step={5}
-            value={styleRatio} onValueChange={setStyleRatio}
-            minimumTrackTintColor={c.secondary.main}
-            maximumTrackTintColor={c.primary.main}
-            thumbTintColor={c.primary.main}
-          />
-          <View style={styles.ratioLabels}>
-            <Text style={[styles.ratioPercent, { color: c.secondary.main }]}>{100 - styleRatio}%</Text>
-            <Text style={[styles.ratioPercent, { color: c.primary.main }]}>{styleRatio}%</Text>
-          </View>
-        </View>
-
         {/* ─── Shift / Excluded Days Calendar ─────────────── */}
         <View style={[styles.section, { backgroundColor: c.surface.containerLowest }]}>
           <TouchableOpacity style={styles.sectionToggle} onPress={() => setShowShiftCal(!showShiftCal)}>
@@ -365,6 +374,75 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
           )}
         </View>
 
+        {/* ─── Ders Derinliği (per-subject days) ────────────── */}
+        <View style={[styles.section, { backgroundColor: c.surface.containerLowest }]}>
+          <TouchableOpacity style={styles.sectionToggle} onPress={() => setShowDepth(!showDepth)}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <MaterialIcons name="tune" size={20} color={c.primary.main} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionLabel, { color: c.onSurface.variant, marginBottom: 0 }]}>DERS DERİNLİĞİ</Text>
+                <Text style={[styles.hintText, { color: c.onSurface.variant }]}>
+                  {anyCustomDepth
+                    ? `Toplam ${totalPlanDays} gün — kendi ayarların`
+                    : `Toplam ${totalPlanDays} gün — önerilen (değiştirebilirsin)`}
+                </Text>
+              </View>
+            </View>
+            <MaterialIcons name={showDepth ? 'expand-less' : 'expand-more'} size={22} color={c.outline.main} />
+          </TouchableOpacity>
+          {showDepth && (
+            <View style={{ marginTop: 12, gap: 8 }}>
+              {effectiveBlocks.map((b) => {
+                const color = SUBJECT_COLORS[b.subject as TUSSubject] || c.outline.main;
+                return (
+                  <View key={b.subject} style={[styles.depthRow, { backgroundColor: c.surface.containerLow }]}>
+                    <View style={styles.depthHeader}>
+                      <View style={[styles.subjectDot, { backgroundColor: color }]} />
+                      <Text style={[styles.depthSubject, { color: c.onSurface.main }]} numberOfLines={1}>{b.subject}</Text>
+                      {b.isCustom ? (
+                        <View style={[styles.depthBadge, { backgroundColor: c.tertiary.container }]}>
+                          <Text style={[styles.depthBadgeText, { color: c.tertiary.onContainer }]}>Özel</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.depthBadge, { backgroundColor: c.secondary.container }]}>
+                          <Text style={[styles.depthBadgeText, { color: c.secondary.onContainer }]}>Önerilen</Text>
+                        </View>
+                      )}
+                    </View>
+                    {(['reading', 'question'] as const).map((phase) => {
+                      const value = phase === 'reading' ? b.reading : b.question;
+                      return (
+                        <View key={phase} style={styles.stepperRow}>
+                          <Text style={[styles.stepperLabel, { color: c.onSurface.variant }]}>
+                            {phase === 'reading' ? 'Okuma' : 'Soru'}
+                          </Text>
+                          <View style={styles.stepper}>
+                            <TouchableOpacity
+                              onPress={() => setBlockDay(b.subject, phase, value - 1, b.recommended)}
+                              disabled={value <= BLOCK_DAY_MIN}
+                              style={[styles.stepperBtn, { backgroundColor: c.surface.containerHigh }, value <= BLOCK_DAY_MIN && { opacity: 0.3 }]}
+                            >
+                              <MaterialIcons name="remove" size={18} color={c.primary.main} />
+                            </TouchableOpacity>
+                            <Text style={[styles.stepperValue, { color: c.onSurface.main }]}>{value}</Text>
+                            <TouchableOpacity
+                              onPress={() => setBlockDay(b.subject, phase, value + 1, b.recommended)}
+                              disabled={value >= BLOCK_DAY_MAX}
+                              style={[styles.stepperBtn, { backgroundColor: c.surface.containerHigh }, value >= BLOCK_DAY_MAX && { opacity: 0.3 }]}
+                            >
+                              <MaterialIcons name="add" size={18} color={c.primary.main} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
         {/* ─── Live Preview ───────────────────────────────── */}
         {turResult && (
           <View style={[styles.previewCard, { backgroundColor: c.primary.container }]}>
@@ -372,14 +450,14 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
             <Text style={[styles.previewTur, { color: c.primary.onContainer }]}>{turResult.label}</Text>
             <Text style={[styles.previewReason, { color: c.primary.onContainer }]}>{turResult.reasoning}</Text>
 
-            {/* Dynamic stats */}
+            {/* Dynamic stats — plan length is driven by the per-subject depth */}
             <View style={[styles.previewStatsGrid, { backgroundColor: c.primary.main + '30' }]}>
               <View style={styles.previewStatItem}>
-                <Text style={[styles.previewStatValue, { color: c.primary.onContainer }]}>{turResult.estimatedWeeks}</Text>
+                <Text style={[styles.previewStatValue, { color: c.primary.onContainer }]}>{totalPlanWeeks}</Text>
                 <Text style={[styles.previewStatLabel, { color: c.primary.onContainer }]}>hafta</Text>
               </View>
               <View style={styles.previewStatItem}>
-                <Text style={[styles.previewStatValue, { color: c.primary.onContainer }]}>{turResult.estimatedDays}</Text>
+                <Text style={[styles.previewStatValue, { color: c.primary.onContainer }]}>{totalPlanDays}</Text>
                 <Text style={[styles.previewStatLabel, { color: c.primary.onContainer }]}>çalışma günü</Text>
               </View>
               <View style={styles.previewStatItem}>
@@ -387,8 +465,8 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
                 <Text style={[styles.previewStatLabel, { color: c.primary.onContainer }]}>saat/hafta</Text>
               </View>
               <View style={styles.previewStatItem}>
-                <Text style={[styles.previewStatValue, { color: c.primary.onContainer }]}>{turResult.totalStudyHours}</Text>
-                <Text style={[styles.previewStatLabel, { color: c.primary.onContainer }]}>toplam saat</Text>
+                <Text style={[styles.previewStatValue, { color: c.primary.onContainer }]}>{effectiveBlocks.filter((b) => b.reading + b.question > 0).length}</Text>
+                <Text style={[styles.previewStatLabel, { color: c.primary.onContainer }]}>ders</Text>
               </View>
             </View>
 
@@ -406,7 +484,7 @@ export function BuilderFlow({ onGenerate, isGenerating }: BuilderFlowProps) {
       <View style={[styles.bottomBar, { backgroundColor: c.surface.main, borderTopColor: c.surface.containerHigh }]}>
         <TouchableOpacity
           style={[styles.generateBtn, { backgroundColor: canGenerate ? c.primary.main : c.surface.containerHigh }]}
-          onPress={() => turResult && onGenerate(turResult.turNumber)}
+          onPress={() => turResult && onGenerate(turResult.turNumber, customBlockConfig)}
           disabled={!canGenerate || isGenerating}
           activeOpacity={0.85}
         >
@@ -459,9 +537,6 @@ const styles = StyleSheet.create({
   dayChip: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md, borderWidth: 1.5 },
   dayChipText: { fontSize: 12, fontWeight: '700' },
 
-  ratioLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  ratioLabel: { ...typography.caption },
-  ratioPercent: { ...typography.bodyBold },
 
   // Subject reorder
   subjectRow: {
@@ -471,6 +546,18 @@ const styles = StyleSheet.create({
   subjectDot: { width: 10, height: 10, borderRadius: 5 },
   subjectRowText: { ...typography.bodyBold, fontSize: 14, flex: 1 },
   moveBtn: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+
+  // Per-subject depth steppers
+  depthRow: { borderRadius: radius.md, paddingVertical: 10, paddingHorizontal: 12, gap: 6 },
+  depthHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+  depthSubject: { ...typography.bodyBold, fontSize: 14, flex: 1 },
+  depthBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.full },
+  depthBadgeText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stepperLabel: { ...typography.caption },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  stepperBtn: { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  stepperValue: { ...typography.bodyBold, fontSize: 15, minWidth: 24, textAlign: 'center' },
 
   // Preview
   previewCard: { borderRadius: radius['2xl'], padding: 20, marginBottom: 12 },

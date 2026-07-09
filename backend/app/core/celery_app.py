@@ -36,6 +36,10 @@ celery_app.autodiscover_tasks(["app"])
 from celery.schedules import crontab
 
 celery_app.conf.beat_schedule = {
+    "morning_reminder_daily_08h": {
+        "task": "morning_reminder",
+        "schedule": crontab(hour=8, minute=0),  # Daily at 08:00 Europe/Istanbul
+    },
     "inactivity_scan_every_6h": {
         "task": "inactivity_scan",
         "schedule": 60.0 * 60.0 * 6,  # Every 6 hours

@@ -6,8 +6,9 @@ Attributes:
 """
 from datetime import datetime, timedelta, date
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func, desc, and_
+from sqlalchemy import select, func, desc, and_, Integer
 from app.models import StudySession, PlanTask, MockExamBreakdown, MockExam, Topic, StudyPlan
+from app.models.qbank import QuestionAttempt, Question
 
 def compute_inactivity_hours(db: Session, student_id: int) -> int:
     """
@@ -93,15 +94,15 @@ def compute_adherence_7d(db: Session, student_id: int) -> float:
 
 def compute_weak_topics_top3(db: Session, student_id: int) -> list[dict]:
     """
-    Use last N MockExamBreakdown rows grouped by topic_id.
-    Rank by lowest accuracy (correct / (correct + wrong + blank)).
+    Rank topics/subjects by lowest accuracy, blending two signals:
+    1. MockExamBreakdown rows (manual score entry) grouped by Topic.
+    2. QuestionAttempt rows (QBank) grouped by Question.subject.
+
+    MockExam signal uses topic_id as key; QBank signal uses subject string.
+    Both are merged into a unified dict keyed by subject name, then top-3 returned.
     """
-    # 1. Get recent breakdowns
-    # We'll fetch all breakdowns from the last 5 exams? Or simple aggregation of all time?
-    # "Use last N MockExamBreakdown rows". Let's say N=50 rows (or all).
-    # Group by Topic.
-    
-    stmt = (
+    # ── Signal 1: MockExamBreakdown grouped by topic ──────────────────────────
+    breakdown_stmt = (
         select(
             MockExamBreakdown.topic_id,
             func.sum(MockExamBreakdown.correct).label("total_correct"),
@@ -114,23 +115,62 @@ def compute_weak_topics_top3(db: Session, student_id: int) -> list[dict]:
         .where(MockExam.student_id == student_id)
         .group_by(MockExamBreakdown.topic_id, Topic.name)
     )
-    
-    results = db.execute(stmt).all()
-    
-    topic_scores = []
-    for r in results:
+    breakdown_rows = db.execute(breakdown_stmt).all()
+
+    # keyed by topic_name: {accuracy_sum, count} for averaging with QBank signal
+    merged: dict[str, dict] = {}
+    for r in breakdown_rows:
         total = r.total_correct + r.total_wrong + r.total_blank
         accuracy = (r.total_correct / total) * 100 if total > 0 else 0.0
-        topic_scores.append({
+        merged[r.topic_name] = {
             "topic_id": r.topic_id,
             "topic_name": r.topic_name,
+            "accuracy_sum": accuracy,
+            "signal_count": 1,
+            "total_questions": total,
+        }
+
+    # ── Signal 2: QuestionAttempt grouped by subject ──────────────────────────
+    attempt_stmt = (
+        select(
+            Question.subject,
+            func.count(QuestionAttempt.id).label("attempts"),
+            func.sum(QuestionAttempt.is_correct.cast(Integer)).label("correct"),
+        )
+        .join(Question, QuestionAttempt.question_id == Question.id)
+        .where(QuestionAttempt.student_id == student_id)
+        .group_by(Question.subject)
+    )
+    attempt_rows = db.execute(attempt_stmt).all()
+
+    for r in attempt_rows:
+        accuracy = (r.correct / r.attempts) * 100 if r.attempts else 0.0
+        if r.subject in merged:
+            # Average the two signals
+            merged[r.subject]["accuracy_sum"] += accuracy
+            merged[r.subject]["signal_count"] += 1
+            merged[r.subject]["total_questions"] += r.attempts
+        else:
+            merged[r.subject] = {
+                "topic_id": None,
+                "topic_name": r.subject,
+                "accuracy_sum": accuracy,
+                "signal_count": 1,
+                "total_questions": r.attempts,
+            }
+
+    # ── Build final list ───────────────────────────────────────────────────────
+    topic_scores = []
+    for entry in merged.values():
+        accuracy = entry["accuracy_sum"] / entry["signal_count"]
+        topic_scores.append({
+            "topic_id": entry["topic_id"],
+            "topic_name": entry["topic_name"],
             "accuracy": accuracy,
-            "total_questions": total
+            "total_questions": entry["total_questions"],
         })
-    
-    # Sort by accuracy ascending (lowest first)
+
     topic_scores.sort(key=lambda x: x["accuracy"])
-    
     return topic_scores[:3]
 
 def compute_risk_score(db: Session, student_id: int) -> int:

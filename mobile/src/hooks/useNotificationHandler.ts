@@ -7,6 +7,7 @@ import { useNotificationStore } from '../state/notificationStore';
 
 interface NotificationData {
     kind?: string;
+    route?: string;          // Generic deep-link route (e.g. "/(tabs)/practice")
     message_id?: number;
     workflow_run_id?: number;
     student_id?: number;
@@ -93,22 +94,26 @@ export function useNotificationHandler() {
         // Determine target destination
         let destination = '/(tabs)/inbox'; // default fallback
 
-        if (data.kind === 'coach_message') {
+        // Generic route override from notification data (e.g. morning_reminder → /practice)
+        if (data.route) {
+            destination = data.route;
+        } else if (data.kind === 'coach_message' || data.kind === 'weekly_plan') {
             // Update cache so UI reflects new message immediately
             queryClient.invalidateQueries({ queryKey: ['messages'] });
             queryClient.invalidateQueries({ queryKey: ['message'] });
             queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
 
-            // Prefer message_id (new approach), fallback to workflow_run_id (legacy)
-            if (data.message_id) {
+            if (data.kind === 'weekly_plan') {
+                destination = '/(tabs)/plan';
+            } else if (data.message_id) {
                 destination = `/message/${data.message_id}`;
             } else if (data.workflow_run_id) {
-                // Fallback: Use legacy route that looks up by workflow_run_id
                 destination = `/message/workflow_run/${data.workflow_run_id}`;
             } else {
-                // Coach message but no identifiers - go to inbox
                 destination = '/(tabs)/inbox';
             }
+        } else if (data.kind === 'morning_reminder') {
+            destination = '/(tabs)/practice';
         }
 
         // Check if user is logged in

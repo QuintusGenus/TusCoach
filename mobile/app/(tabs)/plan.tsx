@@ -10,7 +10,7 @@ import {
   generatePlan, completeTask, updatePlanTask, deletePlanTask, createPlanTask,
   updatePreferences, reorderPlanBlocks, type DailyPlan,
 } from '../../src/api/coach';
-import type { UpdateTaskData, CreateTaskData } from '../../src/api/coach';
+import type { UpdateTaskData, CreateTaskData, BlockConfigItem } from '../../src/api/coach';
 import { usePlanGeneratorStore } from '../../src/state/planGeneratorStore';
 import { ModeSelector } from '../../src/components/plan-generator/ModeSelector';
 import { WizardFlow } from '../../src/components/plan-generator/WizardFlow';
@@ -54,7 +54,7 @@ export default function PlanPage() {
 
   // ─── Mutations ─────────────────────────────────────────────
   const generateMutation = useMutation({
-    mutationFn: async (turNumber: number) => {
+    mutationFn: async ({ turNumber, customBlockConfig }: { turNumber: number; customBlockConfig?: BlockConfigItem[] }) => {
       // 1. Save user preferences (exam date, daily hours) to backend
       const prefsUpdate: Record<string, any> = {};
       if (generatorStore.examDate) {
@@ -68,11 +68,12 @@ export default function PlanPage() {
         await updatePreferences(prefsUpdate).catch(() => {}); // best-effort
       }
 
-      // 2. Generate the plan
-      const result = await generatePlan(turNumber);
+      // 2. Generate the plan. When the builder sends a custom block config, the
+      //    subject order + per-subject depth are baked in, so no separate reorder.
+      const result = await generatePlan(turNumber, customBlockConfig);
 
-      // 3. Apply custom subject order if user changed it (builder mode)
-      if (generatorStore.mode === 'builder') {
+      // 3. Apply custom subject order (only needed when NOT sending a full config)
+      if (generatorStore.mode === 'builder' && !customBlockConfig) {
         const defaultOrder = ['Fizyoloji-Histoloji', 'Patoloji', 'Dahiliye', 'Biyokimya', 'Pediatri', 'Anatomi', 'Genel Cerrahi', 'Kadın Doğum', 'Küçük Stajlar', 'Mikrobiyoloji', 'Farmakoloji'];
         const customOrder = generatorStore.subjectOrder;
         const orderChanged = customOrder.some((s, i) => s !== defaultOrder[i]);
@@ -164,18 +165,18 @@ export default function PlanPage() {
     );
   };
 
-  const handleGenerate = (turNumber: number) => {
+  const handleGenerate = (turNumber: number, customBlockConfig?: BlockConfigItem[]) => {
     if (hasPlan) {
       Alert.alert(
         'Plan Oluştur',
         'Mevcut plan arşivlenecek. Devam etmek istiyor musunuz?',
         [
           { text: 'İptal', style: 'cancel' },
-          { text: 'Oluştur', onPress: () => generateMutation.mutate(turNumber) },
+          { text: 'Oluştur', onPress: () => generateMutation.mutate({ turNumber, customBlockConfig }) },
         ],
       );
     } else {
-      generateMutation.mutate(turNumber);
+      generateMutation.mutate({ turNumber, customBlockConfig });
     }
   };
 

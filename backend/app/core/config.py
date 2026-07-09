@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     # ── Chat guardrails ──
     CHAT_RATE_LIMIT: int = 30            # max requests per window
     CHAT_RATE_WINDOW: int = 600          # window in seconds (10 min)
+    CHAT_DAILY_LIMIT: int = 20           # max messages per calendar day
     CHAT_MAX_INPUT_CHARS: int = 2000     # truncate user input beyond this
     CHAT_HISTORY_LIMIT: int = 20         # messages sent to LLM context
 

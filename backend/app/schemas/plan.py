@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import date
 from typing import List, Optional
 
@@ -33,8 +33,20 @@ class PlanOverviewResponse(BaseModel):
     tur_number: Optional[int] = None
 
 
+class BlockConfigItem(BaseModel):
+    """One subject's block in a user-customized plan structure."""
+    subject: str
+    order: int = Field(ge=1)
+    reading_days: int = Field(ge=0, le=30)
+    question_days: int = Field(ge=0, le=30)
+
+
 class GeneratePlanRequest(BaseModel):
     tur_number: int = 1
+    # When provided, the plan structure is built from the user's own per-subject
+    # block config instead of the fixed tur preset. tur_number is still used for
+    # labeling and task-detail heuristics.
+    custom_block_config: Optional[List[BlockConfigItem]] = None
 
 
 class UpdateTaskRequest(BaseModel):

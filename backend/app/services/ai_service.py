@@ -27,10 +27,17 @@ def _stub_student_message(workflow_name: str, context: dict) -> StudentMessageOu
             tone="warm"
         )
     elif workflow_name == "exam_intervention":
-        topic = context.get("weak_topic", "Unknown")
+        subjects = context.get("top_subjects", [])
+        accuracy = context.get("top_accuracy", 0)
+        subject_list = " ve ".join(subjects) if subjects else "bazı konular"
+        next_step = f"Bu hafta {subjects[0]} konusuna öncelik ver." if subjects else "Zayıf konulara odaklanmaya devam et."
         return StudentMessageOut(
-            subject="Action Plan: Boost Your Scores",
-            body=f"We noticed you struggled with {topic}. We've created a 7-day focus plan to help you master it.",
+            subject="Deneme Sınavı Analizi",
+            body=(
+                f"Sınavında genel doğruluk oranın %{accuracy:.0f} olarak hesaplandı. "
+                f"En zayıf konuların: {subject_list}. "
+                f"{next_step} Başarılar! 💪"
+            ),
             tone="supportive"
         )
     return StudentMessageOut(subject="Update", body="Workflow completed.", tone="neutral")
@@ -46,7 +53,7 @@ def _stub_coach_report(workflow_name: str, context: dict) -> CoachReportOut:
         )
     return CoachReportOut(summary="Workflow run", risk_level="low", action_items=[])
 
-def generate_student_message(db: Session, student_id: int, run_id: int, workflow_name: str, context: dict) -> StudentMessageOut:
+def generate_student_message(db: Session, student_id: int, run_id: int, workflow_name: str, context: dict) -> StudentMessageOut:  # noqa: E501
     """
     Generates a message for the student based on workflow context AND saves it to CoachMessage table.
 
@@ -55,12 +62,16 @@ def generate_student_message(db: Session, student_id: int, run_id: int, workflow
     """
     from app.models.user import StudentProfile
 
-    # Check for LLM_API_KEY (mock check)
+    # Enrich context with QBank stats for the AI prompt
+    qbank_block = build_qbank_context_block(db, student_id)
+    if qbank_block:
+        context = {**context, "qbank_context": qbank_block}
+
     api_key = os.getenv("LLM_API_KEY")
     if not api_key or api_key == "your-api-key-here":
         msg = _stub_student_message(workflow_name, context)
     else:
-        # Future: Call LLM here
+        # Future: Call LLM here with context (including qbank_context)
         msg = _stub_student_message(workflow_name, context)
 
     # Look up student_profiles.id from users.id
@@ -80,6 +91,66 @@ def generate_student_message(db: Session, student_id: int, run_id: int, workflow
     db.commit()
 
     return msg
+
+def build_qbank_context_block(db: Session, student_id: int) -> str:
+    """
+    Build a QBank performance summary string suitable for injection into AI prompts.
+    Returns an empty string if there is no QBank data yet.
+    """
+    from datetime import datetime, timedelta, date
+    from sqlalchemy import select, func, Integer
+    from app.models.qbank import QuestionAttempt, Question, SRSState
+
+    try:
+        week_ago = datetime.utcnow() - timedelta(days=7)
+
+        # Total attempts this week
+        weekly_total = db.execute(
+            select(func.count(QuestionAttempt.id)).where(
+                QuestionAttempt.student_id == student_id,
+                QuestionAttempt.answered_at >= week_ago,
+            )
+        ).scalar() or 0
+
+        if weekly_total == 0:
+            return ""
+
+        # Per-subject accuracy (all time) — top 3 weakest
+        subject_stats = db.execute(
+            select(
+                Question.subject,
+                func.count(QuestionAttempt.id).label("attempts"),
+                func.sum(QuestionAttempt.is_correct.cast(Integer)).label("correct"),
+            )
+            .join(Question, QuestionAttempt.question_id == Question.id)
+            .where(QuestionAttempt.student_id == student_id)
+            .group_by(Question.subject)
+            .having(func.count(QuestionAttempt.id) >= 3)
+        ).all()
+
+        weakest = sorted(subject_stats, key=lambda r: (r.correct or 0) / r.attempts)[:3]
+
+        # SRS backlog
+        srs_due = db.execute(
+            select(func.count(SRSState.question_id)).where(
+                SRSState.student_id == student_id,
+                SRSState.next_review <= date.today(),
+            )
+        ).scalar() or 0
+
+        weak_lines = "\n".join(
+            f"  - {r.subject} (%{round((r.correct or 0) / r.attempts * 100):.0f} doğruluk)"
+            for r in weakest
+        )
+        return (
+            f"\nQBank (bu haftaki performans):\n"
+            f"  - Toplam soru: {weekly_total}\n"
+            f"  - En zayıf konular:\n{weak_lines}\n"
+            f"  - Tekrar bekleyen soru: {srs_due}\n"
+        )
+    except Exception:
+        return ""
+
 
 def generate_coach_report(workflow_name: str, context: dict) -> CoachReportOut:
     """

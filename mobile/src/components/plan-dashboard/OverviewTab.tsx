@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { SUBJECT_COLORS, type TUSSubject } from '../../constants/subjects';
+import { MonthCalendar } from './MonthCalendar';
 import { typography, radius, shadows, useThemeColors } from '../../ui/theme';
 
 interface OverviewTabProps {
@@ -68,6 +69,11 @@ export function OverviewTab({ overview, structure, onRegenerate }: OverviewTabPr
           <Text style={[styles.statLabel, { color: c.onSurface.variant }]}>tur no</Text>
         </View>
       </View>
+
+      {/* Monthly Calendar */}
+      {blocks.length > 0 && (
+        <MonthCalendar blocks={blocks} startDate={overview.start_date} endDate={overview.end_date} />
+      )}
 
       {/* Phase Timeline */}
       {blocks.length > 0 && (

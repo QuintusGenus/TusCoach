@@ -11,12 +11,12 @@ import {
 import Svg, { Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSession } from '../src/api/coach';
 import { useStopwatch, type Segment } from '../src/hooks/useStopwatch';
 import { TUS_SUBJECTS, SUBJECT_COLORS } from '../src/constants/subjects';
-import { colors, shadows, typography, radius } from '../src/ui/theme';
+import { colors, shadows, typography, radius, useThemeColors } from '../src/ui/theme';
 
 function formatTime(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
@@ -52,6 +52,7 @@ function TimerRing({
   strokeWidth?: number;
   isBreak?: boolean;
 }) {
+  const c = useThemeColors();
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const clamped = Math.min(Math.max(progress % 1, 0), 1);
@@ -61,15 +62,15 @@ function TimerRing({
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
       <Defs>
         <SvgGrad id="timerGrad" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={isBreak ? colors.tertiary.fixedDim : colors.secondary.main} />
-          <Stop offset="1" stopColor={isBreak ? colors.tertiary.main : colors.primary.main} />
+          <Stop offset="0" stopColor={isBreak ? c.tertiary.fixedDim : c.secondary.main} />
+          <Stop offset="1" stopColor={isBreak ? c.tertiary.main : c.primary.main} />
         </SvgGrad>
       </Defs>
       <Circle
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke={colors.surface.containerHigh}
+        stroke={c.surface.containerHigh}
         strokeWidth={strokeWidth}
         fill="transparent"
       />
@@ -91,7 +92,12 @@ function TimerRing({
 export default function ChronometerScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedSubject, setSelectedSubject] = useState<string>(TUS_SUBJECTS[0]);
+  const c = useThemeColors();
+  const params = useLocalSearchParams<{ subject?: string }>();
+  const initialSubject = params.subject && (TUS_SUBJECTS as readonly string[]).includes(params.subject)
+    ? params.subject
+    : TUS_SUBJECTS[0];
+  const [selectedSubject, setSelectedSubject] = useState<string>(initialSubject);
   const [showSegments, setShowSegments] = useState(false);
 
   const {
@@ -164,13 +170,13 @@ export default function ChronometerScreen() {
   const ringProgress = timerState === 'idle' ? 0 : (currentSegmentSeconds % 3600) / 3600;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.surface.main }]} edges={['top']}>
       {/* ─── Header ────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.primary.main} />
+          <MaterialIcons name="arrow-back" size={24} color={c.primary.main} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Kronometre</Text>
+        <Text style={[styles.headerTitle, { color: c.primary.main }]}>Kronometre</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -188,12 +194,13 @@ export default function ChronometerScreen() {
         >
           {TUS_SUBJECTS.map((sub) => {
             const isSelected = selectedSubject === sub;
-            const subColor = SUBJECT_COLORS[sub] || colors.primary.main;
+            const subColor = SUBJECT_COLORS[sub] || c.primary.main;
             return (
               <TouchableOpacity
                 key={sub}
                 style={[
                   styles.subjectChip,
+                  { backgroundColor: c.surface.containerLow },
                   isSelected && { backgroundColor: subColor },
                   isLocked && !isSelected && { opacity: 0.3 },
                 ]}
@@ -201,7 +208,7 @@ export default function ChronometerScreen() {
                 disabled={isLocked}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.subjectChipText, isSelected && { color: colors.white }]}>
+                <Text style={[styles.subjectChipText, { color: c.onSurface.variant }, isSelected && { color: colors.white }]}>
                   {sub}
                 </Text>
               </TouchableOpacity>
@@ -222,8 +229,8 @@ export default function ChronometerScreen() {
                   </Text>
                 </View>
               )}
-              <Text style={styles.timerDisplay}>{formatTime(totalStudySeconds)}</Text>
-              <Text style={styles.timerLabel}>Toplam Çalışma</Text>
+              <Text style={[styles.timerDisplay, { color: c.primary.main }]}>{formatTime(totalStudySeconds)}</Text>
+              <Text style={[styles.timerLabel, { color: c.onSurface.variant }]}>Toplam Çalışma</Text>
             </View>
           </View>
 
@@ -238,58 +245,58 @@ export default function ChronometerScreen() {
         {/* ─── Controls ────────────────────────────────── */}
         <View style={styles.controlRow}>
           {timerState === 'idle' && (
-            <TouchableOpacity style={styles.primaryBtn} onPress={start} activeOpacity={0.85}>
-              <MaterialIcons name="play-arrow" size={28} color={colors.white} />
-              <Text style={styles.primaryBtnText}>Başla</Text>
+            <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: c.primary.main }]} onPress={start} activeOpacity={0.85}>
+              <MaterialIcons name="play-arrow" size={28} color={c.primary.onPrimary} />
+              <Text style={[styles.primaryBtnText, { color: c.primary.onPrimary }]}>Başla</Text>
             </TouchableOpacity>
           )}
 
           {timerState === 'running' && (
             <>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={pause} activeOpacity={0.85}>
-                <MaterialIcons name="pause" size={24} color={colors.primary.main} />
-                <Text style={styles.secondaryBtnText}>Duraklat</Text>
+              <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: c.surface.containerLow, borderColor: c.outline.variant }]} onPress={pause} activeOpacity={0.85}>
+                <MaterialIcons name="pause" size={24} color={c.primary.main} />
+                <Text style={[styles.secondaryBtnText, { color: c.primary.main }]}>Duraklat</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.dangerBtn} onPress={handleStop} activeOpacity={0.85}>
-                <MaterialIcons name="stop" size={24} color={colors.white} />
-                <Text style={styles.dangerBtnText}>Bitir</Text>
+              <TouchableOpacity style={[styles.dangerBtn, { backgroundColor: c.error.main }]} onPress={handleStop} activeOpacity={0.85}>
+                <MaterialIcons name="stop" size={24} color={c.primary.onPrimary} />
+                <Text style={[styles.dangerBtnText, { color: c.primary.onPrimary }]}>Bitir</Text>
               </TouchableOpacity>
             </>
           )}
 
           {timerState === 'paused' && (
             <>
-              <TouchableOpacity style={styles.primaryBtn} onPress={resume} activeOpacity={0.85}>
-                <MaterialIcons name="play-arrow" size={24} color={colors.white} />
-                <Text style={styles.primaryBtnText}>Devam Et</Text>
+              <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: c.primary.main }]} onPress={resume} activeOpacity={0.85}>
+                <MaterialIcons name="play-arrow" size={24} color={c.primary.onPrimary} />
+                <Text style={[styles.primaryBtnText, { color: c.primary.onPrimary }]}>Devam Et</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.dangerBtn} onPress={handleStop} activeOpacity={0.85}>
-                <MaterialIcons name="stop" size={24} color={colors.white} />
-                <Text style={styles.dangerBtnText}>Bitir</Text>
+              <TouchableOpacity style={[styles.dangerBtn, { backgroundColor: c.error.main }]} onPress={handleStop} activeOpacity={0.85}>
+                <MaterialIcons name="stop" size={24} color={c.primary.onPrimary} />
+                <Text style={[styles.dangerBtnText, { color: c.primary.onPrimary }]}>Bitir</Text>
               </TouchableOpacity>
             </>
           )}
 
           {timerState === 'stopped' && (
-            <TouchableOpacity style={styles.secondaryBtn} onPress={reset} activeOpacity={0.85}>
-              <MaterialIcons name="refresh" size={24} color={colors.primary.main} />
-              <Text style={styles.secondaryBtnText}>Sıfırla</Text>
+            <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: c.surface.containerLow, borderColor: c.outline.variant }]} onPress={reset} activeOpacity={0.85}>
+              <MaterialIcons name="refresh" size={24} color={c.primary.main} />
+              <Text style={[styles.secondaryBtnText, { color: c.primary.main }]}>Sıfırla</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* ─── Segment Details ─────────────────────────── */}
         {segments.length > 0 && (
-          <View style={styles.segmentsSection}>
+          <View style={[styles.segmentsSection, { backgroundColor: c.surface.containerLowest }]}>
             <TouchableOpacity
               style={styles.segmentToggle}
               onPress={() => setShowSegments(!showSegments)}
             >
-              <Text style={styles.segmentToggleText}>Detaylar</Text>
+              <Text style={[styles.segmentToggleText, { color: c.outline.main }]}>Detaylar</Text>
               <MaterialIcons
                 name={showSegments ? 'expand-less' : 'expand-more'}
                 size={20}
-                color={colors.outline.main}
+                color={c.outline.main}
               />
             </TouchableOpacity>
 
@@ -306,10 +313,10 @@ export default function ChronometerScreen() {
                           { backgroundColor: seg.type === 'study' ? colors.success : colors.tertiary.fixedDim },
                         ]}
                       />
-                      <Text style={styles.segLabel}>
+                      <Text style={[styles.segLabel, { color: c.onSurface.main }]}>
                         {seg.type === 'study' ? `Çalışma ${studyIdx}` : `Mola ${breakIdx}`}
                       </Text>
-                      <Text style={styles.segDuration}>{formatTime(seg.duration)}</Text>
+                      <Text style={[styles.segDuration, { color: c.onSurface.main }]}>{formatTime(seg.duration)}</Text>
                     </View>
                   );
                 })}

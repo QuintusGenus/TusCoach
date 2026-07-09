@@ -54,6 +54,7 @@ function TimerRing({
   strokeWidth?: number;
   isBreak?: boolean;
 }) {
+  const c = useThemeColors();
   const r = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * r;
   const clamped = Math.min(Math.max(progress % 1, 0), 1);
@@ -63,15 +64,15 @@ function TimerRing({
     <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
       <Defs>
         <SvgGrad id="timerGradInline" x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor={isBreak ? colors.tertiary.fixedDim : colors.secondary.main} />
-          <Stop offset="1" stopColor={isBreak ? colors.tertiary.main : colors.primary.main} />
+          <Stop offset="0" stopColor={isBreak ? c.tertiary.fixedDim : c.secondary.main} />
+          <Stop offset="1" stopColor={isBreak ? c.tertiary.main : c.primary.main} />
         </SvgGrad>
       </Defs>
       <Circle
         cx={size / 2}
         cy={size / 2}
         r={r}
-        stroke={colors.surface.containerHigh}
+        stroke={c.surface.containerHigh}
         strokeWidth={strokeWidth}
         fill="transparent"
       />
@@ -215,6 +216,7 @@ export function StudyTimer({ onSessionSaved }: StudyTimerProps) {
               key={sub}
               style={[
                 styles.subjectChip,
+                { backgroundColor: c.surface.containerLow, borderColor: c.outline.variant + '40' },
                 isSelected && { backgroundColor: subColor, borderColor: subColor },
                 isLocked && !isSelected && { opacity: 0.35 },
               ]}
@@ -225,6 +227,7 @@ export function StudyTimer({ onSessionSaved }: StudyTimerProps) {
               <Text
                 style={[
                   styles.subjectChipText,
+                  { color: c.onSurface.variant },
                   isSelected && { color: colors.white },
                 ]}
               >
@@ -264,42 +267,42 @@ export function StudyTimer({ onSessionSaved }: StudyTimerProps) {
       {/* ─── Control Buttons ─────────────────────────────── */}
       <View style={styles.controlRow}>
         {isIdle && (
-          <TouchableOpacity style={styles.startBtn} onPress={start} activeOpacity={0.85}>
-            <MaterialIcons name="play-arrow" size={24} color={colors.white} />
-            <Text style={styles.startBtnText}>Başla</Text>
+          <TouchableOpacity style={[styles.startBtn, { backgroundColor: c.primary.main }]} onPress={start} activeOpacity={0.85}>
+            <MaterialIcons name="play-arrow" size={24} color={c.primary.onPrimary} />
+            <Text style={[styles.startBtnText, { color: c.primary.onPrimary }]}>Başla</Text>
           </TouchableOpacity>
         )}
 
         {isRunning && (
           <>
-            <TouchableOpacity style={styles.pauseBtn} onPress={pause} activeOpacity={0.85}>
-              <MaterialIcons name="pause" size={22} color={colors.primary.main} />
-              <Text style={styles.pauseBtnText}>Duraklat</Text>
+            <TouchableOpacity style={[styles.pauseBtn, { backgroundColor: c.surface.containerLow, borderColor: c.outline.variant }]} onPress={pause} activeOpacity={0.85}>
+              <MaterialIcons name="pause" size={22} color={c.primary.main} />
+              <Text style={[styles.pauseBtnText, { color: c.primary.main }]}>Duraklat</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.stopBtn} onPress={handleStop} activeOpacity={0.85}>
-              <MaterialIcons name="stop" size={22} color={colors.white} />
-              <Text style={styles.stopBtnText}>Bitir</Text>
+            <TouchableOpacity style={[styles.stopBtn, { backgroundColor: c.error.main }]} onPress={handleStop} activeOpacity={0.85}>
+              <MaterialIcons name="stop" size={22} color={c.primary.onPrimary} />
+              <Text style={[styles.stopBtnText, { color: c.primary.onPrimary }]}>Bitir</Text>
             </TouchableOpacity>
           </>
         )}
 
         {isPaused && (
           <>
-            <TouchableOpacity style={styles.startBtn} onPress={resume} activeOpacity={0.85}>
-              <MaterialIcons name="play-arrow" size={22} color={colors.white} />
-              <Text style={styles.startBtnText}>Devam Et</Text>
+            <TouchableOpacity style={[styles.startBtn, { backgroundColor: c.primary.main }]} onPress={resume} activeOpacity={0.85}>
+              <MaterialIcons name="play-arrow" size={22} color={c.primary.onPrimary} />
+              <Text style={[styles.startBtnText, { color: c.primary.onPrimary }]}>Devam Et</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.stopBtn} onPress={handleStop} activeOpacity={0.85}>
-              <MaterialIcons name="stop" size={22} color={colors.white} />
-              <Text style={styles.stopBtnText}>Bitir</Text>
+            <TouchableOpacity style={[styles.stopBtn, { backgroundColor: c.error.main }]} onPress={handleStop} activeOpacity={0.85}>
+              <MaterialIcons name="stop" size={22} color={c.primary.onPrimary} />
+              <Text style={[styles.stopBtnText, { color: c.primary.onPrimary }]}>Bitir</Text>
             </TouchableOpacity>
           </>
         )}
 
         {isStopped && (
-          <TouchableOpacity style={styles.pauseBtn} onPress={reset} activeOpacity={0.85}>
-            <MaterialIcons name="refresh" size={22} color={colors.primary.main} />
-            <Text style={styles.pauseBtnText}>Sıfırla</Text>
+          <TouchableOpacity style={[styles.pauseBtn, { backgroundColor: c.surface.containerLow, borderColor: c.outline.variant }]} onPress={reset} activeOpacity={0.85}>
+            <MaterialIcons name="refresh" size={22} color={c.primary.main} />
+            <Text style={[styles.pauseBtnText, { color: c.primary.main }]}>Sıfırla</Text>
           </TouchableOpacity>
         )}
       </View>
