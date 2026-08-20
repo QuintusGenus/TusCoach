@@ -4,9 +4,59 @@ Generates human-readable messages from workflow context.
 Supports stub mode (local) and future LLM integration.
 """
 import os
+import json
+import logging
 from sqlalchemy.orm import Session
 from app.schemas.ai import StudentMessageOut, CoachReportOut
 from app.models.message import CoachMessage
+
+logger = logging.getLogger(__name__)
+
+# ── TUS question generation prompts ──────────────────────────────────────────
+
+_QUESTION_SYSTEM_PROMPT = """\
+Sen uzman bir TUS (Tıpta Uzmanlık Sınavı) soru yazarısın.
+Görevin: Türkiye tıp uzmanlık sınavı formatında, yüksek kaliteli Türkçe soru üretmek.
+
+SORU YAZIM KURALLARI:
+1. Soru gövdesi (stem) klinisyen ya da temel bilim senaryo tarzında olmalıdır.
+2. Tam olarak 5 seçenek (A, B, C, D, E) bulunmalıdır.
+3. Sadece bir seçenek kesinlikle doğru olmalıdır; diğerleri makul ama yanlış olmalıdır.
+4. Açıklama (explanation) doğru cevabı ve neden diğerlerinin yanlış olduğunu kısaca belirtmelidir.
+5. Tüm metin Türkçe olmalıdır.
+
+ÇIKTI FORMATI — geçerli JSON, başka hiçbir şey ekleme:
+{
+  "stem": "<soru gövdesi>",
+  "options": {
+    "A": "<seçenek A>",
+    "B": "<seçenek B>",
+    "C": "<seçenek C>",
+    "D": "<seçenek D>",
+    "E": "<seçenek E>"
+  },
+  "correct_key": "<A|B|C|D|E>",
+  "explanation": "<kısa açıklama, 2-3 cümle>"
+}"""
+
+_QUESTION_USER_TEMPLATE = """\
+Lütfen şu parametrelerle bir TUS sorusu üret:
+- Sınav türü: {test_type} ({test_type_label})
+- Ders: {subject}
+- Konu: {subtopic}
+- Zorluk: {difficulty_label} ({difficulty_desc})
+
+Sadece JSON döndür."""
+
+_TEST_TYPE_LABELS = {
+    "temel": "Temel Tıp Bilimleri",
+    "klinik": "Klinik Tıp Bilimleri",
+}
+_DIFFICULTY_DESCRIPTIONS = {
+    "kolay": "sınava yeni başlayan öğrenciler için temel kavramlar",
+    "orta": "standart TUS soru zorluğu, konsept uygulaması",
+    "zor": "ileri analiz, ayırıcı tanı veya karmaşık senaryo",
+}
 
 # Simple stub logic
 def _stub_student_message(workflow_name: str, context: dict) -> StudentMessageOut:
@@ -150,6 +200,96 @@ def build_qbank_context_block(db: Session, student_id: int) -> str:
         )
     except Exception:
         return ""
+
+
+def generate_tus_question(
+    subject: str,
+    subtopic: str,
+    test_type: str,
+    difficulty_label: str,
+) -> "Question":
+    """
+    Generate one TUS-style question via Gemini and return an unsaved Question ORM
+    object with status='draft'. Raises ValueError on parse/validation failure.
+    Raises RuntimeError if LLM_API_KEY is not configured.
+    """
+    from openai import OpenAI
+    from app.core.config import get_settings
+    from app.models.qbank import Question
+
+    settings = get_settings()
+    api_key = settings.LLM_API_KEY
+    if not api_key:
+        raise RuntimeError(
+            "LLM_API_KEY is not configured. Set it in backend/.env to generate questions."
+        )
+
+    client = OpenAI(api_key=api_key, base_url=settings.LLM_BASE_URL)
+
+    user_prompt = _QUESTION_USER_TEMPLATE.format(
+        test_type=test_type,
+        test_type_label=_TEST_TYPE_LABELS.get(test_type, test_type),
+        subject=subject,
+        subtopic=subtopic or subject,
+        difficulty_label=difficulty_label,
+        difficulty_desc=_DIFFICULTY_DESCRIPTIONS.get(difficulty_label, ""),
+    )
+
+    response = client.chat.completions.create(
+        model=settings.LLM_MODEL,
+        messages=[
+            {"role": "system", "content": _QUESTION_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    if not response.choices:
+        raise ValueError("LLM returned empty choices")
+
+    raw = response.choices[0].message.content or ""
+    # Strip markdown fences if the model wraps its output despite json_object mode
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.rstrip("`").strip()
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"LLM did not return valid JSON: {exc}\nRaw: {raw[:500]}")
+
+    stem = (data.get("stem") or "").strip()
+    options = data.get("options") or {}
+    correct_key = (data.get("correct_key") or "").strip().upper()
+    explanation = (data.get("explanation") or "").strip() or None
+
+    if not stem:
+        raise ValueError("LLM response missing 'stem'")
+    expected_keys = {"A", "B", "C", "D", "E"}
+    actual_keys = {k.upper() for k in options}
+    if actual_keys != expected_keys:
+        raise ValueError(
+            f"LLM options must have exactly keys A-E, got: {actual_keys}"
+        )
+    if correct_key not in expected_keys:
+        raise ValueError(f"LLM 'correct_key' must be A-E, got: {correct_key!r}")
+
+    options = {k.upper(): v for k, v in options.items()}
+
+    return Question(
+        test=test_type,
+        subject=subject,
+        subtopic=subtopic or None,
+        difficulty_label=difficulty_label,
+        stem=stem,
+        options=options,
+        correct_key=correct_key,
+        explanation=explanation,
+        status="draft",
+    )
 
 
 def generate_coach_report(workflow_name: str, context: dict) -> CoachReportOut:

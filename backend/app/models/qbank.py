@@ -19,6 +19,7 @@ class Question(Base):
     test: Mapped[str] = mapped_column(String(20), nullable=False, index=True)       # "temel" | "klinik"
     subject: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     subtopic: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    difficulty_label: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # "kolay" | "orta" | "zor"
     stem: Mapped[str] = mapped_column(Text, nullable=False)
     options: Mapped[dict] = mapped_column(JSONB, nullable=False)                    # {"A": "...", "B": "...", ...}
     correct_key: Mapped[str] = mapped_column(String(1), nullable=False)             # "A"-"E"

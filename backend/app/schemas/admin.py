@@ -1,9 +1,10 @@
 """
 Admin/Debug schemas for development
 """
+import uuid
 from datetime import datetime, date
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, List, Dict
+from pydantic import BaseModel, ConfigDict
 
 
 class WorkflowRunOut(BaseModel):
@@ -14,8 +15,7 @@ class WorkflowRunOut(BaseModel):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EventLogOut(BaseModel):
@@ -27,8 +27,7 @@ class EventLogOut(BaseModel):
     created_at: datetime
     processed_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PlanTaskOut(BaseModel):
@@ -42,5 +41,45 @@ class PlanTaskOut(BaseModel):
     status: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ── Question pipeline schemas ─────────────────────────────────────────────────
+
+class QuestionAdminOut(BaseModel):
+    """Full question details for admin review — includes correct_key and explanation."""
+    id: uuid.UUID
+    test: str
+    subject: str
+    subtopic: Optional[str] = None
+    difficulty_label: Optional[str] = None
+    stem: str
+    options: Dict[str, str]
+    correct_key: str
+    explanation: Optional[str] = None
+    source_citation: Optional[str] = None
+    predicted_diff: Optional[float] = None
+    empirical_diff: Optional[float] = None
+    status: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class QuestionPatchIn(BaseModel):
+    """All fields optional — only provided fields are updated."""
+    test: Optional[str] = None
+    subject: Optional[str] = None
+    subtopic: Optional[str] = None
+    difficulty_label: Optional[str] = None
+    stem: Optional[str] = None
+    options: Optional[Dict[str, str]] = None
+    correct_key: Optional[str] = None
+    explanation: Optional[str] = None
+    source_citation: Optional[str] = None
+    predicted_diff: Optional[float] = None
+
+
+class BulkApproveIn(BaseModel):
+    """List of question IDs to bulk-approve."""
+    ids: List[uuid.UUID]

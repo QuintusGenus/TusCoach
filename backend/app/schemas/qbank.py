@@ -15,6 +15,7 @@ class QuestionOut(BaseModel):
     test: str
     subject: str
     subtopic: Optional[str] = None
+    difficulty_label: Optional[str] = None
     stem: str
     options: Dict[str, str]            # {"A": "...", "B": "...", ...}
     status: str
