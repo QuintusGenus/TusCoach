@@ -16,16 +16,17 @@ logger = logging.getLogger(__name__)
 
 _QUESTION_SYSTEM_PROMPT = """\
 Sen uzman bir TUS (Tıpta Uzmanlık Sınavı) soru yazarısın.
-Görevin: Türkiye tıp uzmanlık sınavı formatında, yüksek kaliteli Türkçe soru üretmek.
+Görevin: Türkiye Tıpta Uzmanlık Sınavı formatına tam uygun, yüksek kaliteli sorular üretmektir.
 
-SORU YAZIM KURALLARI:
-1. Soru gövdesi (stem) klinisyen ya da temel bilim senaryo tarzında olmalıdır.
-2. Tam olarak 5 seçenek (A, B, C, D, E) bulunmalıdır.
-3. Sadece bir seçenek kesinlikle doğru olmalıdır; diğerleri makul ama yanlış olmalıdır.
-4. Açıklama (explanation) doğru cevabı ve neden diğerlerinin yanlış olduğunu kısaca belirtmelidir.
-5. Tüm metin Türkçe olmalıdır.
+ZORUNLU KURALLAR:
+1. DİL: Tüm metin Türkçe olmalıdır. İSTİSNA: Türkçeye çevrilemeyen veya çevrildiğinde tıbbi anlamını yitiren terimler (örn. "Vmax", "Km", "HbA1c", "PCR", "pH") orijinal haliyle kullanılabilir.
+2. FORMAT: Tam olarak 5 seçenek (A, B, C, D, E) içeren çoktan seçmeli format. Yalnızca bir seçenek kesinlikle doğru olmalı; diğerleri medikal açıdan makul ama yanlış olmalıdır.
+3. TUS UYUMU: Soru gövdesi (stem) gerçek TUS sınavı tarzında olmalıdır — klinik vaka sunumu, laboratuvar bulgusu yorumu veya temel bilim mekanizması sorusu şeklinde.
+4. AÇIKLAMA: Explanation alanı şu formatta olmalıdır:
+   "Doğru Cevap: [A/B/C/D/E]\nAçıklama: [tıbbi gerçeklere dayalı, doğru seçeneği ve diğerlerinin neden yanlış olduğunu açıklayan 3-4 cümle]"
+5. ZORLUK: İstenen zorluk seviyesine (1-5) kesinlikle uyulmalıdır.
 
-ÇIKTI FORMATI — geçerli JSON, başka hiçbir şey ekleme:
+ÇIKTI FORMATI — yalnızca geçerli JSON, başka hiçbir şey ekleme:
 {
   "stem": "<soru gövdesi>",
   "options": {
@@ -36,7 +37,7 @@ SORU YAZIM KURALLARI:
     "E": "<seçenek E>"
   },
   "correct_key": "<A|B|C|D|E>",
-  "explanation": "<kısa açıklama, 2-3 cümle>"
+  "explanation": "Doğru Cevap: <harf>\\nAçıklama: <açıklama metni>"
 }"""
 
 _QUESTION_USER_TEMPLATE = """\
@@ -44,7 +45,7 @@ Lütfen şu parametrelerle bir TUS sorusu üret:
 - Sınav türü: {test_type} ({test_type_label})
 - Ders: {subject}
 - Konu: {subtopic}
-- Zorluk: {difficulty_label} ({difficulty_desc})
+- Zorluk seviyesi: {difficulty_label}/5 — {difficulty_desc}
 
 Sadece JSON döndür."""
 
@@ -53,10 +54,36 @@ _TEST_TYPE_LABELS = {
     "klinik": "Klinik Tıp Bilimleri",
 }
 _DIFFICULTY_DESCRIPTIONS = {
-    "kolay": "sınava yeni başlayan öğrenciler için temel kavramlar",
-    "orta": "standart TUS soru zorluğu, konsept uygulaması",
-    "zor": "ileri analiz, ayırıcı tanı veya karmaşık senaryo",
+    "1": "çok kolay — temel tanımlar ve ezber bilgi, sınava yeni başlayanlar için",
+    "2": "kolay — kavram anlama, basit mekanizma soruları",
+    "3": "orta — standart TUS zorluk seviyesi, konsept uygulaması ve yorum",
+    "4": "zor — ileri analiz, ayırıcı tanı, çok adımlı klinik akıl yürütme",
+    "5": "çok zor — nadir durumlar, karmaşık senaryo, birden fazla kavramın entegrasyonu",
 }
+
+# ── Classification prompt ─────────────────────────────────────────────────────
+
+_CLASSIFY_SYSTEM_PROMPT = """\
+Sen uzman bir TUS (Tıpta Uzmanlık Sınavı) sorusu analiz uzmanısın.
+Görevin: Verilen TUS sorusunu analiz edip sınıflandırmak.
+
+ÇIKTI FORMATI — yalnızca geçerli JSON:
+{
+  "test_type": "temel veya klinik",
+  "subject": "Ders adı (örn. Biyokimya, Fizyoloji, Dahiliye, Kardiyoloji)",
+  "subtopic": "Alt konu / konu başlığı (örn. Enzim Kinetiği, Kalp Yetmezliği)",
+  "difficulty": "1-5 arası rakam (1=çok kolay, 5=çok zor)",
+  "difficulty_reason": "Bu zorluğu seçme gerekçesi (1-2 cümle)",
+  "style": "soru tarzı özeti (örn. klinik vaka, mekanizma sorusu, laboratuvar yorumu)"
+}
+
+SINIFLANDIRMA KILAVUZU:
+- test_type: Temel bilimleri (anatomi, biyokimya, fizyoloji, histoloji, mikrobiyoloji, patoloji, farmakoloji, biyofizik) → "temel"; Klinik branşları → "klinik"
+- difficulty 1: Direkt tanım/ezber sorusu
+- difficulty 2: Basit kavram uygulama, tek adım
+- difficulty 3: Standart TUS — klinik vaka + 1-2 adım yorumlama
+- difficulty 4: Karmaşık vaka, ayırıcı tanı, birden fazla kavram
+- difficulty 5: Nadir durum, çok adımlı akıl yürütme, entegrasyon sorusu"""
 
 # Simple stub logic
 def _stub_student_message(workflow_name: str, context: dict) -> StudentMessageOut:
@@ -202,29 +229,97 @@ def build_qbank_context_block(db: Session, student_id: int) -> str:
         return ""
 
 
+def _build_few_shot_block(db: Session, subject: str, subtopic: str, test_type: str, n: int = 3) -> str:
+    """
+    Fetch up to N approved questions matching the target subject/type and format
+    them as a few-shot example block to inject into the generation prompt.
+    Returns an empty string if no examples are found.
+    """
+    from app.models.qbank import Question as Q
+    from sqlalchemy import func
+
+    if db is None:
+        return ""
+
+    try:
+        base = db.query(Q).filter(Q.status == "approved", Q.test == test_type, Q.subject == subject)
+
+        # Prefer exact subtopic match; pad with other subtopics from same subject
+        examples = []
+        if subtopic:
+            exact = base.filter(Q.subtopic == subtopic).order_by(func.random()).limit(n).all()
+            examples.extend(exact)
+            if len(examples) < n:
+                ids_used = [e.id for e in examples]
+                others = (
+                    base.filter(Q.id.notin_(ids_used))
+                    .order_by(func.random())
+                    .limit(n - len(examples))
+                    .all()
+                )
+                examples.extend(others)
+        else:
+            examples = base.order_by(func.random()).limit(n).all()
+
+        if not examples:
+            return ""
+
+        lines = ["\nREFERANS TUS SORULARI (aşağıdaki soru tarzı, format ve zorluk seviyesini incele ve benzer kalitede yeni bir soru yaz — aynı soruyu kopyalama):\n"]
+        for i, ex in enumerate(examples, 1):
+            opts = "\n".join(f"  {k}) {v}" for k, v in sorted(ex.options.items()))
+            lines.append(f"--- ÖRNEK {i} ---")
+            lines.append(f"Ders: {ex.subject} | Konu: {ex.subtopic or '-'} | Zorluk: {ex.difficulty_label or '?'}/5")
+            lines.append(ex.stem)
+            lines.append(opts)
+            if ex.explanation:
+                lines.append(ex.explanation)
+            lines.append("")
+        return "\n".join(lines)
+    except Exception as exc:
+        logger.warning("Few-shot fetch failed: %s", exc)
+        return ""
+
+
+def _parse_llm_json(raw: str) -> dict:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```", 2)[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+        raw = raw.rstrip("`").strip()
+    return json.loads(raw)
+
+
+def _get_llm_client():
+    from openai import OpenAI
+    from app.core.config import get_settings
+    settings = get_settings()
+    if not settings.LLM_API_KEY:
+        raise RuntimeError("LLM_API_KEY is not configured. Set it in backend/.env.")
+    return OpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL), settings
+
+
 def generate_tus_question(
     subject: str,
     subtopic: str,
     test_type: str,
     difficulty_label: str,
+    db: Session = None,
 ) -> "Question":
     """
     Generate one TUS-style question via Gemini and return an unsaved Question ORM
-    object with status='draft'. Raises ValueError on parse/validation failure.
-    Raises RuntimeError if LLM_API_KEY is not configured.
+    object with status='draft'. When db is provided, fetches few-shot reference
+    examples from approved questions to guide style and difficulty.
     """
-    from openai import OpenAI
-    from app.core.config import get_settings
     from app.models.qbank import Question
 
-    settings = get_settings()
-    api_key = settings.LLM_API_KEY
-    if not api_key:
-        raise RuntimeError(
-            "LLM_API_KEY is not configured. Set it in backend/.env to generate questions."
-        )
+    client, settings = _get_llm_client()
 
-    client = OpenAI(api_key=api_key, base_url=settings.LLM_BASE_URL)
+    few_shot = _build_few_shot_block(db, subject, subtopic, test_type)
+
+    system_prompt = _QUESTION_SYSTEM_PROMPT
+    if few_shot:
+        system_prompt = _QUESTION_SYSTEM_PROMPT + "\n" + few_shot
 
     user_prompt = _QUESTION_USER_TEMPLATE.format(
         test_type=test_type,
@@ -238,7 +333,7 @@ def generate_tus_question(
     response = client.chat.completions.create(
         model=settings.LLM_MODEL,
         messages=[
-            {"role": "system", "content": _QUESTION_SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
         response_format={"type": "json_object"},
@@ -247,19 +342,10 @@ def generate_tus_question(
     if not response.choices:
         raise ValueError("LLM returned empty choices")
 
-    raw = response.choices[0].message.content or ""
-    # Strip markdown fences if the model wraps its output despite json_object mode
-    raw = raw.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```", 2)[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-        raw = raw.rstrip("`").strip()
-
     try:
-        data = json.loads(raw)
+        data = _parse_llm_json(response.choices[0].message.content or "")
     except json.JSONDecodeError as exc:
-        raise ValueError(f"LLM did not return valid JSON: {exc}\nRaw: {raw[:500]}")
+        raise ValueError(f"LLM did not return valid JSON: {exc}")
 
     stem = (data.get("stem") or "").strip()
     options = data.get("options") or {}
@@ -271,13 +357,9 @@ def generate_tus_question(
     expected_keys = {"A", "B", "C", "D", "E"}
     actual_keys = {k.upper() for k in options}
     if actual_keys != expected_keys:
-        raise ValueError(
-            f"LLM options must have exactly keys A-E, got: {actual_keys}"
-        )
+        raise ValueError(f"LLM options must have exactly keys A-E, got: {actual_keys}")
     if correct_key not in expected_keys:
         raise ValueError(f"LLM 'correct_key' must be A-E, got: {correct_key!r}")
-
-    options = {k.upper(): v for k, v in options.items()}
 
     return Question(
         test=test_type,
@@ -285,11 +367,46 @@ def generate_tus_question(
         subtopic=subtopic or None,
         difficulty_label=difficulty_label,
         stem=stem,
-        options=options,
+        options={k.upper(): v for k, v in options.items()},
         correct_key=correct_key,
         explanation=explanation,
         status="draft",
     )
+
+
+def classify_question(raw_question: dict) -> dict:
+    """
+    Classify a raw question (stem + options + correct_key) via LLM.
+    Returns a dict with: test_type, subject, subtopic, difficulty, difficulty_reason, style.
+    """
+    client, settings = _get_llm_client()
+
+    opts = "\n".join(
+        f"  {k}) {v}" for k, v in sorted((raw_question.get("options") or {}).items())
+    )
+    user_content = (
+        f"Soruyu analiz et ve sınıflandır:\n\n"
+        f"{raw_question.get('stem', '')}\n{opts}\n"
+        f"Doğru cevap: {raw_question.get('correct_key', '?')}\n"
+        + (f"Mevcut açıklama: {raw_question['explanation']}" if raw_question.get("explanation") else "")
+    )
+
+    response = client.chat.completions.create(
+        model=settings.LLM_MODEL,
+        messages=[
+            {"role": "system", "content": _CLASSIFY_SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    if not response.choices:
+        raise ValueError("LLM returned empty choices during classification")
+
+    try:
+        return _parse_llm_json(response.choices[0].message.content or "")
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Classification JSON parse failed: {exc}")
 
 
 def generate_coach_report(workflow_name: str, context: dict) -> CoachReportOut:

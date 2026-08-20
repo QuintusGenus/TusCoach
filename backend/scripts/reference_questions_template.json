@@ -1,0 +1,26 @@
+[
+  {
+    "stem": "45 yaşında erkek hasta acil servise göğüs ağrısı ile başvuruyor. EKG'de ST elevasyonu saptanıyor. Kardiyak troponin I düzeyi yüksek bulunuyor. Bu hastada miyokard hasarının en erken biyokimyasal göstergesi aşağıdakilerden hangisidir?",
+    "options": {
+      "A": "Troponin I",
+      "B": "CK-MB",
+      "C": "Miyoglobin",
+      "D": "LDH",
+      "E": "AST"
+    },
+    "correct_key": "C",
+    "explanation": "Miyoglobin, miyokard hasarında en erken yükselen biyobelirteçtir (2-3 saat). Ancak kardiyak özgüllüğü düşüktür. Troponin I en spesifik ve geç yükselen belirteçtir."
+  },
+  {
+    "stem": "Bir enzimin substrat konsantrasyonu artırıldığında reaksiyon hızının bir platoya ulaşması hangi kavramı açıklar?",
+    "options": {
+      "A": "Vmax",
+      "B": "Km",
+      "C": "Allosterik regülasyon",
+      "D": "pH optimumu",
+      "E": "Sıcaklık optimumu"
+    },
+    "correct_key": "A",
+    "explanation": "Vmax, tüm enzim aktif bölgelerinin substratla doyurulduğu maksimum tepkime hızıdır. Substrat konsantrasyonu ne kadar artırılırsa artırılsın bu değerin üzerine çıkılamaz."
+  }
+]

@@ -21,7 +21,7 @@ from app.core.db import SessionLocal
 from app.services.ai_service import generate_tus_question
 
 VALID_TEST_TYPES = ("temel", "klinik")
-VALID_DIFFICULTIES = ("kolay", "orta", "zor")
+VALID_DIFFICULTIES = ("1", "2", "3", "4", "5")
 
 
 def parse_args():
@@ -31,7 +31,8 @@ def parse_args():
     parser.add_argument("--subject", required=True)
     parser.add_argument("--subtopic", default=None)
     parser.add_argument("--difficulty", required=True, choices=VALID_DIFFICULTIES,
-                        dest="difficulty_label")
+                        dest="difficulty_label",
+                        help="Difficulty level 1 (easiest) to 5 (hardest)")
     parser.add_argument("--count", type=int, default=5)
     parser.add_argument("--commit", action="store_true",
                         help="Insert into DB as drafts (default: dry-run, prints JSON)")
@@ -44,6 +45,7 @@ def main():
     generated = []
     errors = []
 
+    db = SessionLocal()
     for i in range(args.count):
         print(f"[{i+1}/{args.count}] Generating...", file=sys.stderr)
         try:
@@ -52,6 +54,7 @@ def main():
                 subtopic=args.subtopic or args.subject,
                 test_type=args.test_type,
                 difficulty_label=args.difficulty_label,
+                db=db,
             )
             generated.append(question)
             print(f"  OK — correct_key={question.correct_key}", file=sys.stderr)
@@ -61,6 +64,8 @@ def main():
         except Exception as exc:
             print(f"  FAILED (unexpected): {exc}", file=sys.stderr)
             errors.append({"index": i + 1, "error": str(exc)})
+
+    db.close()
 
     if not args.commit:
         out = [
@@ -83,6 +88,7 @@ def main():
         return
 
     # --commit: insert into DB
+    db = SessionLocal()
     if not generated:
         print("Nothing to commit — all generations failed.", file=sys.stderr)
         sys.exit(1)
