@@ -409,6 +409,78 @@ def classify_question(raw_question: dict) -> dict:
         raise ValueError(f"Classification JSON parse failed: {exc}")
 
 
+_CLASSIFY_BATCH_SYSTEM_PROMPT = """\
+Sen uzman bir TUS (Tıpta Uzmanlık Sınavı) sorusu analiz uzmanısın.
+Görevin: Verilen birden fazla TUS sorusunu tek seferde analiz edip sınıflandırmak.
+
+ÇIKTI FORMATI — yalnızca geçerli JSON, başka hiçbir şey ekleme:
+{
+  "results": [
+    {
+      "index": <sorunun 0-tabanlı sırası>,
+      "test_type": "temel veya klinik",
+      "subject": "Ders adı",
+      "subtopic": "Alt konu / konu başlığı",
+      "difficulty": "1-5 arası rakam",
+      "difficulty_reason": "Bu zorluğu seçme gerekçesi (1 cümle)",
+      "style": "soru tarzı özeti"
+    },
+    ...
+  ]
+}
+
+SINIFLANDIRMA KILAVUZU:
+- test_type: Temel bilimleri → "temel"; Klinik branşları → "klinik"
+- difficulty 1: Direkt tanım/ezber
+- difficulty 2: Basit kavram uygulama
+- difficulty 3: Standart TUS — klinik vaka + 1-2 adım yorumlama
+- difficulty 4: Karmaşık vaka, ayırıcı tanı
+- difficulty 5: Nadir durum, çok adımlı akıl yürütme"""
+
+
+def classify_questions_batch(raw_questions: list[dict]) -> list[dict]:
+    """
+    Classify a batch of questions in a single LLM call.
+    Returns a list of tag dicts in the same order as input.
+    Raises ValueError if LLM response can't be parsed.
+    """
+    if not raw_questions:
+        return []
+
+    client, settings = _get_llm_client()
+
+    blocks = []
+    for i, q in enumerate(raw_questions):
+        opts = "\n".join(
+            f"  {k}) {v}" for k, v in sorted((q.get("options") or {}).items())
+        )
+        blocks.append(
+            f"--- SORU {i} ---\n"
+            f"{q.get('stem', '')}\n{opts}\n"
+            f"Doğru cevap: {q.get('correct_key', '?')}"
+        )
+    user_content = "\n\n".join(blocks) + "\n\nYukarıdaki tüm soruları tek JSON çıktısıyla sınıflandır."
+
+    response = client.chat.completions.create(
+        model=settings.LLM_MODEL,
+        messages=[
+            {"role": "system", "content": _CLASSIFY_BATCH_SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        response_format={"type": "json_object"},
+    )
+
+    if not response.choices:
+        raise ValueError("LLM returned empty choices during batch classification")
+
+    data = _parse_llm_json(response.choices[0].message.content or "")
+    results_list = data.get("results", [])
+
+    # Build index-keyed map for safe ordering
+    by_index = {r.get("index", i): r for i, r in enumerate(results_list)}
+    return [by_index.get(i, {}) for i in range(len(raw_questions))]
+
+
 def generate_coach_report(workflow_name: str, context: dict) -> CoachReportOut:
     """
     Generates a report for the coach.

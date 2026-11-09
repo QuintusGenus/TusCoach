@@ -67,3 +67,9 @@ backend/*.db
 
 # Claude Code local config
 .claude/
+
+# Local question-extraction data (source PDFs & extracted output — not for repo)
+backend/scripts/local_pdfs/
+backend/scripts/*_extracted.json
+backend/scripts/*_final.json
+backend/scripts/*_manifest.json
