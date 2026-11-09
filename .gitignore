@@ -73,3 +73,4 @@ backend/scripts/local_pdfs/
 backend/scripts/*_extracted.json
 backend/scripts/*_final.json
 backend/scripts/*_manifest.json
+backend/scripts/corpus_stats.json

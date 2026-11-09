@@ -61,6 +61,43 @@ _DIFFICULTY_DESCRIPTIONS = {
     "5": "çok zor — nadir durumlar, karmaşık senaryo, birden fazla kavramın entegrasyonu",
 }
 
+# Instruction appended to the generation prompt to enforce ORIGINALITY —
+# resemble the reference style, never reproduce a reference question.
+_ORIGINALITY_INSTRUCTION = """\
+ÖZGÜNLÜK KURALI (ÇOK ÖNEMLİ):
+- Referans sorular yalnızca TARZ, UZUNLUK ve ZORLUK örneğidir. ASLA kopyalanmaz.
+- Aynı klinik senaryoyu, aynı hasta verilerini, aynı sayısal değerleri veya aynı
+  cümle yapılarını tekrar KULLANMA. Özgün bir vaka, özgün değerler ve özgün ifade kur.
+- Aynı tıbbi kavramı farklı bir sunum, farklı bir hasta ve farklı sayılarla sorabilirsin;
+  bu normaldir. Yasak olan, mevcut bir sorunun yeniden ifade edilmiş (reworded) halidir."""
+
+# ── Medical/logical verification (reviewer) prompt ────────────────────────────
+
+_VERIFY_SYSTEM_PROMPT = """\
+Sen kıdemli bir TUS soru denetçisisin (tıp fakültesi öğretim üyesi).
+Görevin: Sana verilen TUS sorusunu TIBBİ ve MANTIKSAL açıdan denetlemek.
+
+Kontrol listesi:
+1. TIBBİ DOĞRULUK: Soru gövdesindeki tüm tıbbi bilgiler güncel ve doğru mu?
+2. TEK DOĞRU CEVAP: Belirtilen correct_key gerçekten TEK doğru seçenek mi?
+   Başka bir seçenek de doğru/kısmen doğru olabiliyorsa bu bir HATADIR.
+3. ÇELDİRİCİ KALİTESİ: Diğer seçenekler tıbben makul ama kesin yanlış mı?
+   (Saçma/alakasız çeldirici → düşük kalite.)
+4. AÇIKLAMA TUTARLILIĞI: Açıklama, belirtilen doğru cevabı destekliyor mu?
+   Açıklama ile correct_key çelişiyorsa HATADIR.
+5. MANTIK: Soru kendi içinde tutarlı mı; eksik/çelişkili veri var mı?
+
+ÇIKTI — yalnızca geçerli JSON:
+{
+  "verdict": "pass | fix | reject",
+  "issues": ["<bulunan sorunlar, yoksa boş liste>"],
+  "corrected": null  // veya düzeltilmiş tam soru {stem, options{A..E}, correct_key, explanation}
+}
+Kurallar:
+- Soru tıbben ve mantıken doğruysa → "pass", corrected=null.
+- Küçük düzeltmelerle kurtarılabiliyorsa → "fix" ve corrected içinde DÜZELTİLMİŞ tam soru.
+- Temelden hatalıysa (yanlış cevap anahtarı mantığı, birden fazla doğru, yanlış tıbbi önerme) → "reject"."""
+
 # ── Classification prompt ─────────────────────────────────────────────────────
 
 _CLASSIFY_SYSTEM_PROMPT = """\
@@ -299,27 +336,44 @@ def _get_llm_client():
     return OpenAI(api_key=settings.LLM_API_KEY, base_url=settings.LLM_BASE_URL), settings
 
 
-def generate_tus_question(
-    subject: str,
-    subtopic: str,
-    test_type: str,
-    difficulty_label: str,
-    db: Session = None,
-) -> "Question":
-    """
-    Generate one TUS-style question via Gemini and return an unsaved Question ORM
-    object with status='draft'. When db is provided, fetches few-shot reference
-    examples from approved questions to guide style and difficulty.
-    """
-    from app.models.qbank import Question
+# ── Exam-length calibration (populated by scripts/calibrate_corpus.py) ─────────
 
+_CORPUS_STATS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "scripts", "corpus_stats.json",
+)
+
+
+def _load_corpus_stats(path: str = None) -> dict:
+    """Load per-subject/difficulty length bands; empty dict if not calibrated."""
+    try:
+        with open(path or _CORPUS_STATS_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def length_band_for(stats: dict, test_type: str, subject: str, difficulty_label: str):
+    """Most specific (lo, hi) stem word-count band available, else None."""
+    if not stats:
+        return None
+    for key in (f"{test_type}|{subject}|{difficulty_label}", f"{test_type}|{subject}", "__global__"):
+        band = stats.get(key)
+        if band and "lo" in band and "hi" in band:
+            return (band["lo"], band["hi"])
+    return None
+
+
+def _generate_raw_question(
+    subject, subtopic, test_type, difficulty_label, db=None, length_band=None,
+) -> dict:
+    """One LLM generation call → normalized raw question dict (no validation)."""
     client, settings = _get_llm_client()
 
     few_shot = _build_few_shot_block(db, subject, subtopic, test_type)
-
-    system_prompt = _QUESTION_SYSTEM_PROMPT
+    system_prompt = _QUESTION_SYSTEM_PROMPT + "\n" + _ORIGINALITY_INSTRUCTION
     if few_shot:
-        system_prompt = _QUESTION_SYSTEM_PROMPT + "\n" + few_shot
+        system_prompt += "\n" + few_shot
 
     user_prompt = _QUESTION_USER_TEMPLATE.format(
         test_type=test_type,
@@ -329,6 +383,8 @@ def generate_tus_question(
         difficulty_label=difficulty_label,
         difficulty_desc=_DIFFICULTY_DESCRIPTIONS.get(difficulty_label, ""),
     )
+    if length_band:
+        user_prompt += f"\n- Hedef gövde uzunluğu: yaklaşık {length_band[0]}-{length_band[1]} kelime."
 
     response = client.chat.completions.create(
         model=settings.LLM_MODEL,
@@ -338,39 +394,183 @@ def generate_tus_question(
         ],
         response_format={"type": "json_object"},
     )
-
     if not response.choices:
         raise ValueError("LLM returned empty choices")
-
     try:
         data = _parse_llm_json(response.choices[0].message.content or "")
     except json.JSONDecodeError as exc:
         raise ValueError(f"LLM did not return valid JSON: {exc}")
 
-    stem = (data.get("stem") or "").strip()
     options = data.get("options") or {}
-    correct_key = (data.get("correct_key") or "").strip().upper()
-    explanation = (data.get("explanation") or "").strip() or None
+    return {
+        "stem": (data.get("stem") or "").strip(),
+        "options": {str(k).upper(): str(v).strip() for k, v in options.items()},
+        "correct_key": (data.get("correct_key") or "").strip().upper(),
+        "explanation": (data.get("explanation") or "").strip() or None,
+    }
 
-    if not stem:
-        raise ValueError("LLM response missing 'stem'")
-    expected_keys = {"A", "B", "C", "D", "E"}
-    actual_keys = {k.upper() for k in options}
-    if actual_keys != expected_keys:
-        raise ValueError(f"LLM options must have exactly keys A-E, got: {actual_keys}")
-    if correct_key not in expected_keys:
-        raise ValueError(f"LLM 'correct_key' must be A-E, got: {correct_key!r}")
 
-    return Question(
-        test=test_type,
-        subject=subject,
-        subtopic=subtopic or None,
-        difficulty_label=difficulty_label,
-        stem=stem,
-        options={k.upper(): v for k, v in options.items()},
-        correct_key=correct_key,
-        explanation=explanation,
-        status="draft",
+def verify_question(question: dict) -> dict:
+    """
+    Medical/logical review of a raw question via a second LLM pass.
+    Returns {"verdict": "pass|fix|reject", "issues": [...], "corrected": dict|None}.
+    """
+    client, settings = _get_llm_client()
+
+    opts = "\n".join(f"  {k}) {v}" for k, v in sorted((question.get("options") or {}).items()))
+    user_content = (
+        f"Aşağıdaki soruyu denetle:\n\n"
+        f"{question.get('stem', '')}\n{opts}\n"
+        f"Belirtilen doğru cevap: {question.get('correct_key', '?')}\n"
+        f"Açıklama: {question.get('explanation') or '-'}"
+    )
+    response = client.chat.completions.create(
+        model=settings.LLM_MODEL,
+        messages=[
+            {"role": "system", "content": _VERIFY_SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ],
+        response_format={"type": "json_object"},
+    )
+    if not response.choices:
+        raise ValueError("Verifier returned empty choices")
+    data = _parse_llm_json(response.choices[0].message.content or "")
+
+    verdict = str(data.get("verdict") or "").strip().lower()
+    if verdict not in {"pass", "fix", "reject"}:
+        verdict = "reject"
+    return {
+        "verdict": verdict,
+        "issues": data.get("issues") or [],
+        "corrected": data.get("corrected"),
+    }
+
+
+def _normalize_raw(raw: dict, fallback: dict) -> dict:
+    """Normalize a (possibly corrected) raw question, filling from fallback."""
+    options = raw.get("options") or fallback.get("options") or {}
+    return {
+        "stem": (raw.get("stem") or fallback.get("stem") or "").strip(),
+        "options": {str(k).upper(): str(v).strip() for k, v in options.items()},
+        "correct_key": (raw.get("correct_key") or fallback.get("correct_key") or "").strip().upper(),
+        "explanation": (raw.get("explanation") or fallback.get("explanation") or "").strip() or None,
+    }
+
+
+def generate_tus_question(
+    subject: str,
+    subtopic: str,
+    test_type: str,
+    difficulty_label: str,
+    db: Session = None,
+    *,
+    verify: bool = False,
+    originality_corpus=None,
+    originality_thresholds: dict = None,
+    length_band=None,
+    max_retries: int = 3,
+) -> "Question":
+    """
+    Generate one original, exam-calibrated TUS question and return an unsaved
+    Question ORM object (status='draft').
+
+    Pipeline per attempt: generate → structural validation → originality guard
+    (if `originality_corpus` given) → medical/logical verification (if `verify`),
+    retrying up to `max_retries` times on any failure.
+
+    When `db` is provided, approved questions guide style via few-shot examples.
+    `length_band` defaults to the calibrated band for this subject/difficulty.
+
+    The returned object carries transient (non-persisted) attributes for logging:
+    `_originality_score`, `_review_verdict`, `_review_issues`,
+    `_quality_warnings`, `_attempts`.
+    """
+    from app.models.qbank import Question
+    from app.services import question_quality as qq
+
+    if length_band is None:
+        length_band = length_band_for(_load_corpus_stats(), test_type, subject, difficulty_label)
+
+    corpus = list(originality_corpus or [])
+    last_error = None
+    attempts = 0
+
+    for attempt in range(1, max_retries + 2):   # 1 initial try + max_retries
+        attempts = attempt
+        try:
+            raw = _generate_raw_question(
+                subject, subtopic, test_type, difficulty_label, db=db, length_band=length_band,
+            )
+        except (ValueError, RuntimeError) as exc:
+            last_error = f"generation: {exc}"
+            logger.warning("Attempt %d generation failed: %s", attempt, exc)
+            continue
+
+        sv = qq.structural_validate(raw, length_band=length_band)
+        if not sv["valid"]:
+            last_error = "structural: " + "; ".join(sv["errors"])
+            logger.info("Attempt %d rejected (%s)", attempt, last_error)
+            continue
+        warnings_acc = sv["warnings"]
+
+        orig = {"is_original": True, "score": 0.0, "reason": None}
+        if corpus:
+            orig = qq.originality_check(raw, corpus, thresholds=originality_thresholds)
+            if not orig["is_original"]:
+                last_error = "originality: " + (orig["reason"] or "")
+                logger.info("Attempt %d rejected (%s)", attempt, last_error)
+                continue
+
+        review_verdict, review_issues = "skipped", []
+        if verify:
+            try:
+                review = verify_question(raw)
+            except (ValueError, RuntimeError) as exc:
+                last_error = f"verify-error: {exc}"
+                logger.warning("Attempt %d verify failed: %s", attempt, exc)
+                continue
+            review_verdict, review_issues = review["verdict"], review["issues"]
+
+            if review_verdict == "reject":
+                last_error = "verify-reject: " + "; ".join(str(i) for i in review_issues)
+                logger.info("Attempt %d rejected (%s)", attempt, last_error)
+                continue
+
+            if review_verdict == "fix" and review.get("corrected"):
+                fixed = _normalize_raw(review["corrected"], raw)
+                sv2 = qq.structural_validate(fixed, length_band=length_band)
+                if not sv2["valid"]:
+                    last_error = "verify-fix-invalid: " + "; ".join(sv2["errors"])
+                    continue
+                if corpus:
+                    orig2 = qq.originality_check(fixed, corpus, thresholds=originality_thresholds)
+                    if not orig2["is_original"]:
+                        last_error = "originality-after-fix: " + (orig2["reason"] or "")
+                        continue
+                    orig = orig2
+                raw, warnings_acc = fixed, sv2["warnings"]
+
+        q = Question(
+            test=test_type,
+            subject=subject,
+            subtopic=subtopic or None,
+            difficulty_label=difficulty_label,
+            stem=raw["stem"],
+            options=raw["options"],
+            correct_key=raw["correct_key"],
+            explanation=raw["explanation"],
+            status="draft",
+        )
+        q._originality_score = round(orig.get("score", 0.0), 3)
+        q._review_verdict = review_verdict
+        q._review_issues = review_issues
+        q._quality_warnings = warnings_acc
+        q._attempts = attempts
+        return q
+
+    raise ValueError(
+        f"Failed to produce an acceptable question after {attempts} attempt(s). "
+        f"Last issue: {last_error}"
     )
 
 
